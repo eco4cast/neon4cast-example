@@ -29,7 +29,7 @@ site_data <- readr::read_csv("https://raw.githubusercontent.com/eco4cast/neon4ca
 
 sites <- unique(target$siteID)
 for(i in 1:length(sites)){
-neon4cast::get_stacked_noaa_s3(".",site = sites[i], averaged = FALSE)
+  neon4cast::get_stacked_noaa_s3(".",site = sites[i], averaged = FALSE)
 }
 
 #Step 2.2: Download NOAA future forecast
@@ -73,7 +73,7 @@ for(i in 1:length(sites)){
   
   # Get site information for elevation
   site_info <- site_data %>% filter(field_site_id == sites[i]) 
-
+  
   #Fit linear model based on past data: water temperature = m * air temperature + b
   fit <- lm(target$temperature~target$air_temperature)
   
@@ -82,20 +82,20 @@ for(i in 1:length(sites)){
   
   #use forecasted temperature to predict oyxgen by assuming that oxygen is saturated.  
   forecasted_oxygen <- rMR::Eq.Ox.conc(forecasted_temperature, elevation.m = ,site_info$field_mean_elevation_m, 
-                                     bar.press = NULL, 
-                                     bar.units = NULL,
-                                     out.DO.meas = "mg/L",
-                                     salinity = 0, 
-                                     salinity.units = "pp.thou")
+                                       bar.press = NULL, 
+                                       bar.units = NULL,
+                                       out.DO.meas = "mg/L",
+                                       salinity = 0, 
+                                       salinity.units = "pp.thou")
   
   #Build site level dataframe.  Note we are not forecasting chla
   site_forecast <- tibble(time = noaa_future_mean$time,
-                        siteID = sites[i],
-                        ensemble = noaa_future_mean$ensemble,
-                        forecast = 1,
-                        temperature = forecasted_temperature,
-                        oxygen = forecasted_oxygen,
-                        chla = NA)
+                          siteID = sites[i],
+                          ensemble = noaa_future_mean$ensemble,
+                          forecast = 1,
+                          temperature = forecasted_temperature,
+                          oxygen = forecasted_oxygen,
+                          chla = NA)
   #Bind with other sites
   forecast <- bind_rows(forecast, site_forecast)
 }
@@ -161,8 +161,3 @@ metadata_file <- neon4cast::generate_metadata(forecast_file, team_list, model_me
 neon4cast::submit(forecast_file = forecast_file,
                   metadata = metadata_file,
                   ask = FALSE)
-
-
-
-  
-
