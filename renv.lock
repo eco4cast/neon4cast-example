@@ -580,7 +580,7 @@
       "Package": "lattice",
       "Version": "0.20-45",
       "Source": "Repository",
-      "Repository": "RSPM",
+      "Repository": "CRAN",
       "Hash": "b64cdbb2b340437c4ee047a1f4c4377b"
     },
     "lazyeval": {
@@ -629,7 +629,7 @@
       "Package": "mgcv",
       "Version": "1.8-38",
       "Source": "Repository",
-      "Repository": "RSPM",
+      "Repository": "CRAN",
       "Hash": "be3c61ffbb1e3d3b3df214d192ac5444"
     },
     "mime": {
@@ -695,7 +695,7 @@
       "Package": "nlme",
       "Version": "3.1-153",
       "Source": "Repository",
-      "Repository": "RSPM",
+      "Repository": "CRAN",
       "Hash": "2d632e0d963a653a0329756ce701ecdd"
     },
     "numDeriv": {

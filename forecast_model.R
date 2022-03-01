@@ -1,3 +1,6 @@
+renv::activate()
+renv::restore()
+
 library(tidyverse)
 library(neon4cast)
 library(lubridate)
@@ -7,6 +10,8 @@ Sys.setenv("AWS_DEFAULT_REGION" = "data",
            "AWS_S3_ENDPOINT" = "ecoforecast.org")
 
 dir.create("drivers", showWarnings = FALSE)
+
+forecast_date <- Sys.Date()
 
 #Step 0: Define team name and team members 
 
@@ -36,13 +41,13 @@ for(i in 1:length(sites)){
 
 sites <- unique(target$siteID)
 for(i in 1:length(sites)){
-  neon4cast::get_noaa_forecast_s3(".",model = "NOAAGEFS_1hr",site = sites[i],date = Sys.Date(),cycle = "00")
+  neon4cast::get_noaa_forecast_s3(".",model = "NOAAGEFS_1hr",site = sites[i],date = forecast_date,cycle = "00")
 }
 
 #Step 2.3 Create data frames of drivers
 
 noaa_past <- neon4cast::stack_noaa(dir = "drivers", model = "NOAAGEFS_1hr_stacked")
-noaa_future <- neon4cast::stack_noaa(dir = "drivers", model = "NOAAGEFS_1hr", forecast_date = Sys.Date())
+noaa_future <- neon4cast::stack_noaa(dir = "drivers", model = "NOAAGEFS_1hr", forecast_date = forecast_date)
 
 # Step 2.4 Aggregate (to day) and convert units of drivers
 
