@@ -676,8 +676,8 @@
       "RemoteRepo": "neon4cast",
       "RemoteUsername": "eco4cast",
       "RemoteRef": "HEAD",
-      "RemoteSha": "801dc733309fa514ec57a426ca973b652ad0f6a3",
-      "Hash": "7e32183ababef278f29831c233d0c74e"
+      "RemoteSha": "b80c504003bccb54f920963ad37e66bb4afa40e9",
+      "Hash": "4bf9a496cdee49afe73d2de384d8b452"
     },
     "neonstore": {
       "Package": "neonstore",
