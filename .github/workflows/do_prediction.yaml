@@ -1,21 +1,23 @@
-on:
-  schedule:
-  - cron: "1 16 * * *"
-# on: push
+#on:
+#  schedule:
+#  - cron: "1 16 * * *"
+on: push
 
 jobs:
   build:
-    runs-on: macOS-latest
-    env:
-      GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
+    runs-on: ubuntu-latest
+    container:
+      image: rocker/geospatial
+    #env:
+    #  GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
     steps:
       - name: Checkout repo
         uses: actions/checkout@v2
         with:
           fetch-depth: 0
 
-      - name: Setup R
-        uses: r-lib/actions/setup-r@v1
+      #- name: Setup R
+      #  uses: r-lib/actions/setup-r@v1
 
       - name: Cache Renv packages
         uses: actions/cache@v2
@@ -27,9 +29,10 @@ jobs:
       - name: Install packages
         run: |
           R -e 'install.packages("renv")'
+          R -e 'renv::activate()'
           R -e 'renv::restore()'
 
 # Point to the right path, run the right Rscript command
-      - name: Run PAR automatic prediction file
+      - name: Run automatic prediction file
         run: |
           Rscript forecast_model.R 
