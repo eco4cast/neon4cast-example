@@ -1,6 +1,6 @@
 on:
   schedule:
-  - cron: "25 * * * *"
+  - cron: "59 * * * *"
   workflow_dispatch:
 #on: push
 
