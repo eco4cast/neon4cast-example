@@ -1,7 +1,7 @@
-#on:
-#  schedule:
-#  - cron: "1 16 * * *"
-on: push
+on:
+  schedule:
+  - cron: "25 * * * *"
+#on: push
 
 jobs:
   build:
