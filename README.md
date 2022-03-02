@@ -24,7 +24,14 @@ Ready to submit a forecast?
 
 The forecast in this repository is designed to run daily at 20:00 UTC.  The execution of the forecast occurs on GitHub's servers, so your local computer does not need to be turned on.  In ".github/workflow/do_prediction.yml", the lines `-cron: "* 20 * *"` define the time that the forecast is run.  In this case it is run each day at 20:00:00 UTC (note all GitHub timings are on UTC).  You can update this to run on a different schedule based on timing codes found in https://crontab.guru
 
-You can directly edit the ".github/workflow/do_prediction.yml" file in GitHub.
+To start the automated forecast generation, directly edit the ".github/workflow/do_prediction.yml" file in GitHub. Uncomment (delete the #) line 3 and 4: 
+
+```
+on:
+  workflow_dispatch:
+  #schedule:
+  #- cron: "0 20 * * *"
+```
 
 A video describing how to use GitHub actions for automated forecast generation can be found here: https://youtu.be/dMrUlXi4_Bo
 
