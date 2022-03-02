@@ -163,5 +163,5 @@ metadata_file <- neon4cast::generate_metadata(forecast_file, team_list, model_me
 
 # Step 5: Submit forecast!
 
-#Uncomment this next line when you are ready to submit a forecast to the Challenge!
-#neon4cast::submit(forecast_file = forecast_file, metadata = metadata_file, ask = FALSE)
+
+neon4cast::submit(forecast_file = forecast_file, metadata = metadata_file, ask = FALSE)
