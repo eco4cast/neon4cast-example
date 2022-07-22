@@ -30,24 +30,30 @@ site_data <- readr::read_csv("https://raw.githubusercontent.com/eco4cast/neon4ca
 
 #Step 2: Get drivers
 
-#Step 2.1: Download Paste NOAA forecast stacked together
+s3_past <- arrow::s3_bucket("neon4cast-drivers/noaa/gefs-v12/stage3/parquet",  
+                              endpoint_override =  "data.ecoforecast.org",
+                              anonymous=TRUE)
+
+s3_future <- arrow::s3_bucket("neon4cast-drivers/noaa/gefs-v12/stage2/parquet",  
+                            endpoint_override =  "data.ecoforecast.org",
+                            anonymous=TRUE)
+
+
+df_past <- arrow::open_dataset(s3_past, partitioning = c("site_id"))
+df_future <- arrow::open_dataset(s3_future, partitioning = c("start_date", "cycle"))
 
 sites <- unique(target$siteID)
-for(i in 1:length(sites)){
-  neon4cast::get_stacked_noaa_s3(".",site = sites[i], averaged = FALSE)
-}
+noaa_past <- df_past |> 
+  dplyr::filter(site_id %in% sites,
+                variable == "air_temperature") |> 
+  dplyr::collect()
 
-#Step 2.2: Download NOAA future forecast
-
-sites <- unique(target$siteID)
-for(i in 1:length(sites)){
-  neon4cast::get_noaa_forecast_s3(".",model = "NOAAGEFS_1hr",site = sites[i],date = forecast_date,cycle = "00")
-}
-
-#Step 2.3 Create data frames of drivers
-
-noaa_past <- neon4cast::stack_noaa(dir = "drivers", model = "NOAAGEFS_1hr_stacked")
-noaa_future <- neon4cast::stack_noaa(dir = "drivers", model = "NOAAGEFS_1hr", forecast_date = forecast_date)
+noaa_future <- df_future |> 
+  dplyr::filter(site_id %in% sites,
+                cycle == 0,
+                start_date == forecast_date,
+                variable == "air_temperature") |> 
+  dplyr::collect()
 
 # Step 2.4 Aggregate (to day) and convert units of drivers
 
@@ -93,16 +99,23 @@ for(i in 1:length(sites)){
                                        salinity = 0, 
                                        salinity.units = "pp.thou")
   
+  temperature <- tibble(time = noaa_future_mean$time,
+                        site_id = sites[i],
+                        ensemble = noaa_future_mean$ensemble,
+                        forecast = 1,
+                        predicted = forecasted_temperature,
+                        variable = "temperature")
+  
+  oxygen <- tibble(time = noaa_future_mean$time,
+                   site_id = sites[i],
+                   ensemble = noaa_future_mean$ensemble,
+                   forecast = 1,
+                   predicted = forecasted_oxygen,
+                   variable = "oxygen")
+  
+  
   #Build site level dataframe.  Note we are not forecasting chla
-  site_forecast <- tibble(time = noaa_future_mean$time,
-                          siteID = sites[i],
-                          ensemble = noaa_future_mean$ensemble,
-                          forecast = 1,
-                          temperature = forecasted_temperature,
-                          oxygen = forecasted_oxygen,
-                          chla = NA)
-  #Bind with other sites
-  forecast <- bind_rows(forecast, site_forecast)
+  forecast <- dplyr::bind_rows(temperature, oxygen)
 }
 
 #Visualize forecast.  Is it reasonable?
@@ -121,8 +134,7 @@ forecast_file <- paste0("aquatics","-",min(forecast$time),"-",team_name,".csv.gz
 write_csv(forecast, forecast_file)
 
 #Confirm that output file meets standard for Challenge
-neon4cast::forecast_output_validator(forecast_file)
-
+#neon4cast::forecast_output_validator(forecast_file)
 
 # Step 4: Generate metadata
 
