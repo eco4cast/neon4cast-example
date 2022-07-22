@@ -24,7 +24,7 @@ team_list <- list(list(individualName = list(givenName = "Quinn",
 
 #Step 1: Download latest target data and site description data
 
-target <- readr::read_csv("https://data.ecoforecast.org/targets/aquatics/aquatics-targets.csv.gz", guess_max = 1e6)
+target <- readr::read_csv("https://data.ecoforecast.org/neon4cast-targets/aquatics/aquatics-targets.csv.gz", guess_max = 1e6)
 
 site_data <- readr::read_csv("https://raw.githubusercontent.com/eco4cast/neon4cast-aquatics/master/Aquatic_NEON_Field_Site_Metadata_20210928.csv")
 
