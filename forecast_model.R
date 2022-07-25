@@ -6,12 +6,9 @@ library(neon4cast)
 library(lubridate)
 library(rMR)
 
-Sys.setenv("AWS_DEFAULT_REGION" = "data",
-           "AWS_S3_ENDPOINT" = "ecoforecast.org")
-
 dir.create("drivers", showWarnings = FALSE)
 
-forecast_date <- Sys.Date()
+forecast_date <- as.character(Sys.Date() - lubridate::days(1))
 
 #Step 0: Define team name and team members 
 
@@ -59,17 +56,16 @@ noaa_future <- df_future |>
 noaa_past_mean <- noaa_past %>% 
   mutate(date = as_date(time)) %>% 
   group_by(date) %>% 
-  summarize(air_temperature = mean(air_temperature, na.rm = TRUE), .groups = "drop") %>% 
-  rename(time = date) %>% 
-  mutate(air_temperature = air_temperature - 273.15)
+  summarize(air_temperature = mean(predicted, na.rm = TRUE), .groups = "drop") %>% 
+  rename(time = date) #%>% 
+  #mutate(air_temperature = air_temperature - 273.15)
 
 noaa_future_mean <- noaa_future %>% 
   mutate(date = as_date(time)) %>% 
   group_by(date, ensemble) %>% 
-  summarize(air_temperature = mean(air_temperature, na.rm = TRUE), .groups = "drop") %>% 
+  summarize(air_temperature = mean(predicted, na.rm = TRUE), .groups = "drop") %>% 
   rename(time = date) %>% 
-  mutate(ensemble = as.numeric(stringr::str_sub(ensemble, start = 4, end = 6)),
-         air_temperature = air_temperature - 273.15)
+  mutate(air_temperature = air_temperature - 273.15)
 
 #Step 2.5: Merge in past NOAA data into the targets file, matching by date.
 
@@ -119,11 +115,9 @@ for(i in 1:length(sites)){
 
 #Visualize forecast.  Is it reasonable?
 forecast %>% 
-  select(-chla) %>% 
-  pivot_longer(cols = c("temperature","oxygen"), names_to = "variable", values_to = "values") %>% 
-  ggplot(aes(x = time, y = values, group = ensemble)) +
+  ggplot(aes(x = time, y = predicted, group = ensemble)) +
   geom_line() +
-  facet_grid(variable~siteID, scale ="free")
+  facet_grid(variable~site_id, scale ="free")
 
 #Forecast output file name in standards requires for Challenge.  
 # csv.gz means that it will be compressed
