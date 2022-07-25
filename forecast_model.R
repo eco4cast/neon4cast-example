@@ -57,8 +57,8 @@ noaa_past_mean <- noaa_past %>%
   mutate(date = as_date(time)) %>% 
   group_by(date) %>% 
   summarize(air_temperature = mean(predicted, na.rm = TRUE), .groups = "drop") %>% 
-  rename(time = date) #%>% 
-  #mutate(air_temperature = air_temperature - 273.15)
+  rename(time = date) %>% 
+  mutate(air_temperature = air_temperature - 273.15)
 
 noaa_future_mean <- noaa_future %>% 
   mutate(date = as_date(time)) %>% 
