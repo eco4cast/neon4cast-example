@@ -8,7 +8,7 @@ library(rMR)
 
 dir.create("drivers", showWarnings = FALSE)
 
-forecast_date <- as.character(Sys.Date() - lubridate::days(1))
+forecast_date <- as.character(Sys.Date())
 
 #Step 0: Define team name and team members 
 
