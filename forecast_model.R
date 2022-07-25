@@ -33,13 +33,12 @@ site_data <- readr::read_csv("https://raw.githubusercontent.com/eco4cast/neon4ca
 s3_past <- arrow::s3_bucket("neon4cast-drivers/noaa/gefs-v12/stage3/parquet",  
                               endpoint_override =  "data.ecoforecast.org",
                               anonymous=TRUE)
+df_past <- arrow::open_dataset(s3_past, partitioning = c("site_id"))
+
 
 s3_future <- arrow::s3_bucket("neon4cast-drivers/noaa/gefs-v12/stage2/parquet",  
                             endpoint_override =  "data.ecoforecast.org",
                             anonymous=TRUE)
-
-
-df_past <- arrow::open_dataset(s3_past, partitioning = c("site_id"))
 df_future <- arrow::open_dataset(s3_future, partitioning = c("start_date", "cycle"))
 
 sites <- unique(target$siteID)
