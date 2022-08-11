@@ -6,9 +6,6 @@ library(neon4cast)
 library(lubridate)
 library(rMR)
 
-Sys.setenv("AWS_DEFAULT_REGION" = "data",
-           "AWS_S3_ENDPOINT" = "ecoforecast.org")
-
 dir.create("drivers", showWarnings = FALSE)
 
 forecast_date <- as.character(Sys.Date())
@@ -35,10 +32,13 @@ df_past <- neon4cast::noaa_stage3()
 df_future <- neon4cast::noaa_stage2()
 
 sites <- unique(target$site_id)
+
 noaa_past <- df_past |> 
   dplyr::filter(site_id %in% sites,
                 variable == "air_temperature") |> 
   dplyr::collect()
+
+forecast_date <- as.character(Sys.Date())
 
 noaa_future <- df_future |> 
   dplyr::filter(cycle == 0,
@@ -54,6 +54,7 @@ noaa_past_mean <- noaa_past %>%
   summarize(air_temperature = mean(predicted, na.rm = TRUE), .groups = "drop") %>% 
   rename(time = date) %>% 
   mutate(air_temperature = air_temperature - 273.15)
+
 
 noaa_future <- noaa_future %>% 
   mutate(time = as_date(time)) %>% 
