@@ -17,6 +17,23 @@
       "Hash": "b2866e62bab9378c3cc9476a1954226b",
       "Requirements": []
     },
+    "EFIstandards": {
+      "Package": "EFIstandards",
+      "Version": "0.1.1",
+      "Source": "GitHub",
+      "RemoteType": "github",
+      "RemoteHost": "api.github.com",
+      "RemoteUsername": "eco4cast",
+      "RemoteRepo": "EFIstandards",
+      "RemoteRef": "master",
+      "RemoteSha": "95b55bd6b37b058dd5f996787871000c9a462d9f",
+      "Hash": "1db761b4b33a93f15f97ad2055a6350e",
+      "Requirements": [
+        "EML",
+        "udunits2",
+        "usethis"
+      ]
+    },
     "EML": {
       "Package": "EML",
       "Version": "2.0.6.1",
@@ -505,10 +522,10 @@
     },
     "evaluate": {
       "Package": "evaluate",
-      "Version": "0.15",
+      "Version": "0.16",
       "Source": "Repository",
-      "Repository": "CRAN",
-      "Hash": "699a7a93d08c962d9f8950b2d7a227f1",
+      "Repository": "RSPM",
+      "Hash": "9a3d3c345f8a5648abe61608aaa29518",
       "Requirements": []
     },
     "fansi": {
@@ -993,8 +1010,8 @@
       "RemoteRepo": "neon4cast",
       "RemoteUsername": "eco4cast",
       "RemoteRef": "HEAD",
-      "RemoteSha": "1d528bd573ee723d6a321d2baa8950050c5016e8",
-      "Hash": "40d4a69316e0747157f3582208f3b9d2",
+      "RemoteSha": "ca57bf47da5e03cfe7e16bee5e85837efbb6e27f",
+      "Hash": "70b78470a2518606d3fae254f4b24333",
       "Requirements": [
         "EML",
         "ISOweek",
@@ -1522,6 +1539,14 @@
       "Requirements": [
         "cpp11"
       ]
+    },
+    "udunits2": {
+      "Package": "udunits2",
+      "Version": "0.13.2.1",
+      "Source": "Repository",
+      "Repository": "CRAN",
+      "Hash": "b88cada8058e2370a1950ea8407328b4",
+      "Requirements": []
     },
     "usethis": {
       "Package": "usethis",
