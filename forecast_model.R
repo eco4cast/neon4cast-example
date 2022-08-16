@@ -9,7 +9,7 @@ library(rMR)
 dir.create("drivers", showWarnings = FALSE)
 
 forecast_date <- Sys.Date()
-noaa_date <- Sys.Date() - days(1)
+noaa_date <- Sys.Date() - days(1)  #Need to use yesterday's NOAA forecast because today's is not available yet
 
 #Step 0: Define team name and team members 
 
@@ -125,6 +125,10 @@ for(i in 1:length(sites)){
     forecast <- dplyr::bind_rows(forecast, temperature, oxygen)
   }
 }
+
+forecast <- forecast |> 
+  mutuate(start_time = forecast_date) |> #start_time is today
+  select(time, start_time, site_id, variable, ensemble, predicted)
 
 #Visualize forecast.  Is it reasonable?
 forecast %>% 
