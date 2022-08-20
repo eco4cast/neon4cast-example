@@ -128,7 +128,7 @@ for(i in 1:length(sites)){
 }
 
 forecast <- forecast |> 
-  mutuate(start_time = forecast_date) |> #start_time is today
+  mutate(start_time = forecast_date) |> #start_time is today
   select(time, start_time, site_id, variable, ensemble, predicted)
 
 #Visualize forecast.  Is it reasonable?
