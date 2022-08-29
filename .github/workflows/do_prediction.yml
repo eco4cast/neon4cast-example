@@ -7,7 +7,7 @@ jobs:
   build:
     runs-on: ubuntu-latest
     container:
-      image: eco4cast/neon4cast-rocker
+      image: eco4cast/rocker-neon4cast
     steps:
       - name: Checkout repo
         uses: actions/checkout@v2
