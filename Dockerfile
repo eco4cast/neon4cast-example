@@ -1,4 +1,4 @@
-FROM eco4cast/neon4cast-rocker
+FROM eco4cast/rocker-neon4cast
 
 ## Declares build arguments
 ARG NB_USER
