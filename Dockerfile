@@ -1,4 +1,4 @@
-FROM rocker/binder:4.1.2
+FROM eco4cast/rocker-binder
 
 ## Declares build arguments
 ARG NB_USER
@@ -17,10 +17,4 @@ apt-get update --fix-missing > /dev/null\
 ; fi
 USER ${NB_USER}
 
-ENV RENV_VERSION 0.15.2-2
-RUN R -e "install.packages('remotes', repos = c(CRAN = 'https://cloud.r-project.org'))"
-RUN R -e "remotes::install_github('rstudio/renv@${RENV_VERSION}')"
-
-COPY ./renv.lock renv.lock
-RUN R -e 'renv::activate()'
-RUN R -e 'renv::restore()'
+RUN if [ -f install.R ]; then R --quiet -f install.R; fi
