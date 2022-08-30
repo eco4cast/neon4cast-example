@@ -4,7 +4,7 @@ This repository is a template example for generating a forecast that is automate
 
 ## Applying this repository to a new forecast
 
-1) Click "Use Template" to copy this example to your Github account.
+1) Click "Use This Template" to copy this example to your Github account.
 1) Modify `forecast_model.R` to make your forecast model .  Many of the components you need to generate the forecast, including downloading NOAA weather forecasts, downloading target data, generating forecast files, generating metadata, validating files, and submitting forecasts. Avoid running the `neon4cast::submit()` function at the end of `forecast_model.R` until you are ready to submit a forecast to the Challenge.  It is important that you do NOT change the name of the file.  GitHub Actions (below) is looking for this file name. Be sure to change your `team_name` and `team_list`
 2) Commit and push the changes to `forecast_model.R` to Github. 
 
