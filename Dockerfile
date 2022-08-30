@@ -1,4 +1,4 @@
-FROM eco4cast/rocker-neon4cast
+FROM eco4cast/rocker-binder
 
 ## Declares build arguments
 ARG NB_USER
