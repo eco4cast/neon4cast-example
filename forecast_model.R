@@ -57,7 +57,7 @@ for(i in 1:length(sites)){
     dplyr::select(time, predicted, ensemble) |>
     dplyr::collect()
   
-  # Step 2.4 Aggregate (to day) and convert units of drivers
+  # Aggregate (to day) and convert units of drivers
   
   noaa_past_mean <- noaa_past %>% 
     mutate(date = as_date(time)) %>% 
@@ -73,7 +73,7 @@ for(i in 1:length(sites)){
     mutate(air_temperature = air_temperature - 273.15) |> 
     select(time, air_temperature, ensemble)
   
-  #Step 2.5: Merge in past NOAA data into the targets file, matching by date.
+  #Merge in past NOAA data into the targets file, matching by date.
   site_target <- target |> 
     select(time, site_id, variable, observed) |> 
     dplyr::filter(variable %in% c("temperature", "oxygen"),
@@ -81,6 +81,7 @@ for(i in 1:length(sites)){
     pivot_wider(names_from = "variable", values_from = "observed") |>
     left_join(noaa_past_mean, by = c("time"))
   
+  #Check that temperature and oxygen are avialable at site
   if("temperature" %in% names(site_target) & "oxygen" %in% names(site_target)){
     
     if(length(which(!is.na(site_target$air_temperature) & !is.na(site_target$temperature))) > 0){
@@ -123,10 +124,10 @@ forecast <- forecast |>
   select(time, start_time, site_id, variable, ensemble, predicted)
 
 #Visualize forecast.  Is it reasonable?
-forecast %>% 
-  ggplot(aes(x = time, y = predicted, group = ensemble)) +
-  geom_line() +
-  facet_grid(variable~site_id, scale ="free")
+#forecast %>% 
+#  ggplot(aes(x = time, y = predicted, group = ensemble)) +
+#  geom_line() +
+#  facet_grid(variable~site_id, scale ="free")
 
 #Forecast output file name in standards requires for Challenge.  
 # csv.gz means that it will be compressed
@@ -135,47 +136,6 @@ forecast_file <- paste0("aquatics","-",min(forecast$time),"-",team_name,".csv.gz
 #Write csv to disk
 write_csv(forecast, forecast_file)
 
-#Confirm that output file meets standard for Challenge
-#neon4cast::forecast_output_validator(forecast_file)
-
-# Step 4: Generate metadata
-
-model_metadata = list(
-  forecast = list(
-    model_description = list(
-      forecast_model_id =  "air2waterSat",  #What goes here
-      name = "Air temperatuer to water temperature linear regression plus assume saturated oxygen", 
-      type = "empirical",  
-      repository = "https://github.com/rqthomas/neon4cast-example" 
-    ),
-    initial_conditions = list(
-      status = "absent"
-    ),
-    drivers = list(
-      status = "propagates",
-      complexity = 1, #Just temperature
-      propagation = list( 
-        type = "ensemble", 
-        size = 31) 
-    ),
-    parameters = list(
-      status = "absent"
-    ),
-    random_effects = list(
-      status = "absent"
-    ),
-    process_error = list(
-      status = "absent"
-    ),
-    obs_error = list(
-      status = "absent"
-    )
-  )
-)
-
-#metadata_file <- neon4cast::generate_metadata(forecast_file, team_list, model_metadata)
-
-# Step 5: Submit forecast!
-
+# Step 4: Submit forecast!
 
 neon4cast::submit(forecast_file = forecast_file, metadata = NULL, ask = FALSE)
