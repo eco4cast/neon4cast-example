@@ -33,49 +33,6 @@ df_future <- neon4cast::noaa_stage2()
 
 sites <- unique(target$site_id)
 
-noaa_past <- df_past |> 
-  dplyr::filter(site_id %in% sites,
-                variable == "air_temperature") |> 
-  dplyr::collect()
-
-noaa_future <- df_future |> 
-  dplyr::filter(cycle == 0,
-                start_date == as.character(noaa_date),
-                time >= lubridate::as_datetime(forecast_date), 
-                variable == "air_temperature") |> 
-  dplyr::collect()
-
-# Step 2.4 Aggregate (to day) and convert units of drivers
-
-noaa_past_mean <- noaa_past %>% 
-  mutate(date = as_date(time)) %>% 
-  group_by(date, site_id) %>% 
-  summarize(air_temperature = mean(predicted, na.rm = TRUE), .groups = "drop") %>% 
-  rename(time = date) %>% 
-  mutate(air_temperature = air_temperature - 273.15)
-
-
-noaa_future <- noaa_future %>% 
-  mutate(time = as_date(time)) %>% 
-  group_by(time, site_id, ensemble) |> 
-  summarize(air_temperature = mean(predicted), .groups = "drop") |> 
-  mutate(air_temperature = air_temperature - 273.15) |> 
-  select(time, site_id, air_temperature, ensemble)
-
-#Step 2.5: Merge in past NOAA data into the targets file, matching by date.
-target <- target |> 
-  select(time, site_id, variable, observed) |> 
-  filter(variable %in% c("temperature", "oxygen")) |> 
-  pivot_wider(names_from = "variable", values_from = "observed")
-
-target <- left_join(target, noaa_past_mean, by = c("time","site_id"))
-
-ggplot(target, aes(x = temperature, y = air_temperature)) +
-  geom_point() +
-  labs(x = "NEON water temperature (C)", y = "NOAA air temperature (C)") +
-  facet_wrap(~site_id)
-
-
 #Step 3.0: Generate forecasts for each site
 
 forecast <- NULL
@@ -85,11 +42,44 @@ for(i in 1:length(sites)){
   # Get site information for elevation
   site_info <- site_data %>% filter(field_site_id == sites[i]) 
   
-  site_target <- target |> 
-    filter(site_id == sites[i])
+  noaa_past <- df_past |> 
+    dplyr::filter(site_id == sites[i],
+                  variable == "air_temperature") |> 
+    dplyr::select(time, predicted, ensemble) |>
+    dplyr::collect()
   
-  noaa_future_site <- noaa_future |> 
-    filter(site_id == sites[i])
+  noaa_future <- df_future |> 
+    dplyr::filter(cycle == 0,
+                  site_id == sites[i],
+                  start_date == as.character(noaa_date),
+                  time >= lubridate::as_datetime(forecast_date), 
+                  variable == "air_temperature") |> 
+    dplyr::select(time, predicted, ensemble) |>
+    dplyr::collect()
+  
+  # Step 2.4 Aggregate (to day) and convert units of drivers
+  
+  noaa_past_mean <- noaa_past %>% 
+    mutate(date = as_date(time)) %>% 
+    group_by(date) %>% 
+    summarize(air_temperature = mean(predicted, na.rm = TRUE), .groups = "drop") %>% 
+    rename(time = date) %>% 
+    mutate(air_temperature = air_temperature - 273.15)
+  
+  noaa_future_site <- noaa_future %>% 
+    mutate(time = as_date(time)) %>% 
+    group_by(time,ensemble) |> 
+    summarize(air_temperature = mean(predicted), .groups = "drop") |> 
+    mutate(air_temperature = air_temperature - 273.15) |> 
+    select(time, air_temperature, ensemble)
+  
+  #Step 2.5: Merge in past NOAA data into the targets file, matching by date.
+  site_target <- target |> 
+    select(time, site_id, variable, observed) |> 
+    filter(variable %in% c("temperature", "oxygen"),
+           site_id == sites[i]) |> 
+    pivot_wider(names_from = "variable", values_from = "observed") |>
+    left_join(noaa_past_mean, by = c("time"))
   
   if(length(which(!is.na(site_target$air_temperature) & !is.na(site_target$temperature))) > 0){
     
@@ -186,3 +176,4 @@ metadata_file <- neon4cast::generate_metadata(forecast_file, team_list, model_me
 
 
 neon4cast::submit(forecast_file = forecast_file, metadata = metadata_file, ask = FALSE)
+
