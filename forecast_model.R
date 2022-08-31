@@ -173,9 +173,9 @@ model_metadata = list(
   )
 )
 
-metadata_file <- neon4cast::generate_metadata(forecast_file, team_list, model_metadata)
+#metadata_file <- neon4cast::generate_metadata(forecast_file, team_list, model_metadata)
 
 # Step 5: Submit forecast!
 
 
-neon4cast::submit(forecast_file = forecast_file, metadata = metadata_file, ask = FALSE)
+neon4cast::submit(forecast_file = forecast_file, metadata = NULL, ask = FALSE)
