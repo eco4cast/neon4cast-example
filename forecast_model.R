@@ -40,7 +40,7 @@ forecast <- NULL
 for(i in 1:length(sites)){
   
   # Get site information for elevation
-  site_info <- site_data %>% filter(field_site_id == sites[i]) 
+  site_info <- site_data %>% dplyr::filter(field_site_id == sites[i]) 
   
   noaa_past <- df_past |> 
     dplyr::filter(site_id == sites[i],
