@@ -23,7 +23,7 @@ team_list <- list(list(individualName = list(givenName = "Quinn",
 target <- readr::read_csv("https://data.ecoforecast.org/neon4cast-targets/aquatics/aquatics-targets.csv.gz", guess_max = 1e6)
 
 site_data <- readr::read_csv("https://raw.githubusercontent.com/eco4cast/neon4cast-targets/main/NEON_Field_Site_Metadata_20220412.csv") |> 
-  filter(aquatics == 1)
+  dplyr::filter(aquatics == 1)
 
 #Step 2: Get drivers
 
@@ -60,64 +60,67 @@ for(i in 1:length(sites)){
   # Step 2.4 Aggregate (to day) and convert units of drivers
   
   noaa_past_mean <- noaa_past %>% 
-    dplyr::mutate(date = as_date(time)) %>% 
-    dplyr::group_by(date) %>% 
-    dplyr::summarize(air_temperature = mean(predicted, na.rm = TRUE), .groups = "drop") %>% 
-    dplyr::rename(time = date) %>% 
-    dplyr::mutate(air_temperature = air_temperature - 273.15)
+    mutate(date = as_date(time)) %>% 
+    group_by(date) %>% 
+    summarize(air_temperature = mean(predicted, na.rm = TRUE), .groups = "drop") %>% 
+    rename(time = date) %>% 
+    mutate(air_temperature = air_temperature - 273.15)
   
   noaa_future_site <- noaa_future %>% 
-    dplyr::mutate(time = as_date(time)) %>% 
-    dplyr::group_by(time,ensemble) |> 
-    dplyr::summarize(air_temperature = mean(predicted), .groups = "drop") |> 
-    dplyr::mutate(air_temperature = air_temperature - 273.15) |> 
-    dplyr::select(time, air_temperature, ensemble)
+    mutate(time = as_date(time)) %>% 
+    group_by(time,ensemble) |> 
+    summarize(air_temperature = mean(predicted), .groups = "drop") |> 
+    mutate(air_temperature = air_temperature - 273.15) |> 
+    select(time, air_temperature, ensemble)
   
   #Step 2.5: Merge in past NOAA data into the targets file, matching by date.
   site_target <- target |> 
-    dplyr::select(time, site_id, variable, observed) |> 
+    select(time, site_id, variable, observed) |> 
     dplyr::filter(variable %in% c("temperature", "oxygen"),
            site_id == sites[i]) |> 
-    tidyr::pivot_wider(names_from = "variable", values_from = "observed") |>
-    dplyr::left_join(noaa_past_mean, by = c("time"))
+    pivot_wider(names_from = "variable", values_from = "observed") |>
+    left_join(noaa_past_mean, by = c("time"))
   
-  if(length(which(!is.na(site_target$air_temperature) & !is.na(site_target$temperature))) > 0){
+  if("temperature" %in% names(site_target) & "oxygen" %in% names(site_target)){
     
-    #Fit linear model based on past data: water temperature = m * air temperature + b
-    fit <- lm(site_target$temperature~site_target$air_temperature)
-    
-    #use linear regression to forecast water temperature for each ensemble member
-    forecasted_temperature <- fit$coefficients[1] + fit$coefficients[2] * noaa_future_site$air_temperature
-    
-    #use forecasted temperature to predict oyxgen by assuming that oxygen is saturated.  
-    forecasted_oxygen <- rMR::Eq.Ox.conc(forecasted_temperature, elevation.m = ,site_info$field_mean_elevation_m, 
-                                         bar.press = NULL, 
-                                         bar.units = NULL,
-                                         out.DO.meas = "mg/L",
-                                         salinity = 0, 
-                                         salinity.units = "pp.thou")
-    
-    temperature <- tibble::tibble(time = noaa_future_site$time,
-                          site_id = sites[i],
-                          ensemble = noaa_future_site$ensemble,
-                          predicted = forecasted_temperature,
-                          variable = "temperature")
-    
-    oxygen <- tibble::tibble(time = noaa_future_site$time,
-                     site_id = sites[i],
-                     ensemble = noaa_future_site$ensemble,
-                     predicted = forecasted_oxygen,
-                     variable = "oxygen")
-    
-    
-    #Build site level dataframe.  Note we are not forecasting chla
-    forecast <- dplyr::bind_rows(forecast, temperature, oxygen)
+    if(length(which(!is.na(site_target$air_temperature) & !is.na(site_target$temperature))) > 0){
+      
+      #Fit linear model based on past data: water temperature = m * air temperature + b
+      fit <- lm(site_target$temperature~site_target$air_temperature)
+      
+      #use linear regression to forecast water temperature for each ensemble member
+      forecasted_temperature <- fit$coefficients[1] + fit$coefficients[2] * noaa_future_site$air_temperature
+      
+      #use forecasted temperature to predict oyxgen by assuming that oxygen is saturated.  
+      forecasted_oxygen <- rMR::Eq.Ox.conc(forecasted_temperature, elevation.m = ,site_info$field_mean_elevation_m, 
+                                           bar.press = NULL, 
+                                           bar.units = NULL,
+                                           out.DO.meas = "mg/L",
+                                           salinity = 0, 
+                                           salinity.units = "pp.thou")
+      
+      temperature <- tibble(time = noaa_future_site$time,
+                            site_id = sites[i],
+                            ensemble = noaa_future_site$ensemble,
+                            predicted = forecasted_temperature,
+                            variable = "temperature")
+      
+      oxygen <- tibble(time = noaa_future_site$time,
+                       site_id = sites[i],
+                       ensemble = noaa_future_site$ensemble,
+                       predicted = forecasted_oxygen,
+                       variable = "oxygen")
+      
+      
+      #Build site level dataframe.  Note we are not forecasting chla
+      forecast <- dplyr::bind_rows(forecast, temperature, oxygen)
+    }
   }
 }
 
 forecast <- forecast |> 
-  dplyr::mutate(start_time = forecast_date) |> #start_time is today
-  dplyr::select(time, start_time, site_id, variable, ensemble, predicted)
+  mutate(start_time = forecast_date) |> #start_time is today
+  select(time, start_time, site_id, variable, ensemble, predicted)
 
 #Visualize forecast.  Is it reasonable?
 forecast %>% 
@@ -130,7 +133,7 @@ forecast %>%
 forecast_file <- paste0("aquatics","-",min(forecast$time),"-",team_name,".csv.gz")
 
 #Write csv to disk
-readr::write_csv(forecast, forecast_file)
+write_csv(forecast, forecast_file)
 
 #Confirm that output file meets standard for Challenge
 #neon4cast::forecast_output_validator(forecast_file)
@@ -170,10 +173,9 @@ model_metadata = list(
   )
 )
 
-#metadata_file <- neon4cast::generate_metadata(forecast_file, team_list, model_metadata)
+metadata_file <- neon4cast::generate_metadata(forecast_file, team_list, model_metadata)
 
 # Step 5: Submit forecast!
 
 
-neon4cast::submit(forecast_file = forecast_file, metadata = NULL, ask = FALSE)
-
+neon4cast::submit(forecast_file = forecast_file, metadata = metadata_file, ask = TRUE)
