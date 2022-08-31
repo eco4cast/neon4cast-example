@@ -60,26 +60,26 @@ for(i in 1:length(sites)){
   # Step 2.4 Aggregate (to day) and convert units of drivers
   
   noaa_past_mean <- noaa_past %>% 
-    mutate(date = as_date(time)) %>% 
-    group_by(date) %>% 
-    summarize(air_temperature = mean(predicted, na.rm = TRUE), .groups = "drop") %>% 
-    rename(time = date) %>% 
-    mutate(air_temperature = air_temperature - 273.15)
+    dplyr::mutate(date = as_date(time)) %>% 
+    dplyr::group_by(date) %>% 
+    dplyr::summarize(air_temperature = mean(predicted, na.rm = TRUE), .groups = "drop") %>% 
+    dplyr::rename(time = date) %>% 
+    dplyr::mutate(air_temperature = air_temperature - 273.15)
   
   noaa_future_site <- noaa_future %>% 
-    mutate(time = as_date(time)) %>% 
-    group_by(time,ensemble) |> 
-    summarize(air_temperature = mean(predicted), .groups = "drop") |> 
-    mutate(air_temperature = air_temperature - 273.15) |> 
-    select(time, air_temperature, ensemble)
+    dplyr::mutate(time = as_date(time)) %>% 
+    dplyr::group_by(time,ensemble) |> 
+    dplyr::summarize(air_temperature = mean(predicted), .groups = "drop") |> 
+    dplyr::mutate(air_temperature = air_temperature - 273.15) |> 
+    dplyr::select(time, air_temperature, ensemble)
   
   #Step 2.5: Merge in past NOAA data into the targets file, matching by date.
   site_target <- target |> 
-    select(time, site_id, variable, observed) |> 
-    filter(variable %in% c("temperature", "oxygen"),
+    dplyr::select(time, site_id, variable, observed) |> 
+    dplyr::filter(variable %in% c("temperature", "oxygen"),
            site_id == sites[i]) |> 
-    pivot_wider(names_from = "variable", values_from = "observed") |>
-    left_join(noaa_past_mean, by = c("time"))
+    tidyr::pivot_wider(names_from = "variable", values_from = "observed") |>
+    dplyr::left_join(noaa_past_mean, by = c("time"))
   
   if(length(which(!is.na(site_target$air_temperature) & !is.na(site_target$temperature))) > 0){
     
@@ -97,13 +97,13 @@ for(i in 1:length(sites)){
                                          salinity = 0, 
                                          salinity.units = "pp.thou")
     
-    temperature <- tibble(time = noaa_future_site$time,
+    temperature <- tibble::tibble(time = noaa_future_site$time,
                           site_id = sites[i],
                           ensemble = noaa_future_site$ensemble,
                           predicted = forecasted_temperature,
                           variable = "temperature")
     
-    oxygen <- tibble(time = noaa_future_site$time,
+    oxygen <- tibble::tibble(time = noaa_future_site$time,
                      site_id = sites[i],
                      ensemble = noaa_future_site$ensemble,
                      predicted = forecasted_oxygen,
@@ -116,8 +116,8 @@ for(i in 1:length(sites)){
 }
 
 forecast <- forecast |> 
-  mutate(start_time = forecast_date) |> #start_time is today
-  select(time, start_time, site_id, variable, ensemble, predicted)
+  dplyr::mutate(start_time = forecast_date) |> #start_time is today
+  dplyr::select(time, start_time, site_id, variable, ensemble, predicted)
 
 #Visualize forecast.  Is it reasonable?
 forecast %>% 
@@ -130,7 +130,7 @@ forecast %>%
 forecast_file <- paste0("aquatics","-",min(forecast$time),"-",team_name,".csv.gz")
 
 #Write csv to disk
-write_csv(forecast, forecast_file)
+readr::write_csv(forecast, forecast_file)
 
 #Confirm that output file meets standard for Challenge
 #neon4cast::forecast_output_validator(forecast_file)
