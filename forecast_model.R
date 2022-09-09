@@ -11,7 +11,7 @@ noaa_date <- Sys.Date() - days(1)  #Need to use yesterday's NOAA forecast becaus
 
 #Step 0: Define team name and team members 
 
-team_name <- "air2waterSat"
+model_id <- "air2waterSat"
 
 team_list <- list(list(individualName = list(givenName = "Quinn", 
                                              surName = "Thomas"),
@@ -63,23 +63,23 @@ for(i in 1:length(sites)){
     mutate(date = as_date(time)) %>% 
     group_by(date) %>% 
     summarize(air_temperature = mean(predicted, na.rm = TRUE), .groups = "drop") %>% 
-    rename(time = date) %>% 
+    rename(datetime = date) %>% 
     mutate(air_temperature = air_temperature - 273.15)
   
   noaa_future_site <- noaa_future %>% 
-    mutate(time = as_date(time)) %>% 
-    group_by(time,ensemble) |> 
+    mutate(datetime = as_date(time)) %>% 
+    group_by(datetime, ensemble) |> 
     summarize(air_temperature = mean(predicted), .groups = "drop") |> 
     mutate(air_temperature = air_temperature - 273.15) |> 
-    select(time, air_temperature, ensemble)
+    select(datetime, air_temperature, ensemble)
   
   #Merge in past NOAA data into the targets file, matching by date.
   site_target <- target |> 
-    select(time, site_id, variable, observed) |> 
+    select(datetime, site_id, variable, observed) |> 
     dplyr::filter(variable %in% c("temperature", "oxygen"),
            site_id == sites[i]) |> 
     pivot_wider(names_from = "variable", values_from = "observed") |>
-    left_join(noaa_past_mean, by = c("time"))
+    left_join(noaa_past_mean, by = c("datetime"))
   
   #Check that temperature and oxygen are avialable at site
   if("temperature" %in% names(site_target) & "oxygen" %in% names(site_target)){
@@ -100,13 +100,13 @@ for(i in 1:length(sites)){
                                            salinity = 0, 
                                            salinity.units = "pp.thou")
       
-      temperature <- tibble(time = noaa_future_site$time,
+      temperature <- tibble(datetime = noaa_future_site$datetime,
                             site_id = sites[i],
                             ensemble = noaa_future_site$ensemble,
                             predicted = forecasted_temperature,
                             variable = "temperature")
       
-      oxygen <- tibble(time = noaa_future_site$time,
+      oxygen <- tibble(datetime = noaa_future_site$datetime,
                        site_id = sites[i],
                        ensemble = noaa_future_site$ensemble,
                        predicted = forecasted_oxygen,
@@ -120,8 +120,10 @@ for(i in 1:length(sites)){
 }
 
 forecast <- forecast |> 
-  mutate(start_time = forecast_date) |> #start_time is today
-  select(time, start_time, site_id, variable, ensemble, predicted)
+  mutate(reference_datetime = forecast_date,
+         family = "ensemble") |> 
+  rename(parameter = ensemble) |> 
+  select(datetime, reference_datetime, site_id, family, parameer, variable, predicted)
 
 #Visualize forecast.  Is it reasonable?
 #forecast %>% 
@@ -131,7 +133,7 @@ forecast <- forecast |>
 
 #Forecast output file name in standards requires for Challenge.  
 # csv.gz means that it will be compressed
-forecast_file <- paste0("aquatics","-",min(forecast$time),"-",team_name,".csv.gz")
+forecast_file <- paste0("aquatics","-",min(forecast$datetime),"-",model_id,".csv.gz")
 
 #Write csv to disk
 write_csv(forecast, forecast_file)
