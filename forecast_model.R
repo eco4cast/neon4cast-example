@@ -123,7 +123,7 @@ forecast <- forecast |>
   mutate(reference_datetime = forecast_date,
          family = "ensemble") |> 
   rename(parameter = ensemble) |> 
-  select(datetime, reference_datetime, site_id, family, parameer, variable, predicted)
+  select(datetime, reference_datetime, site_id, family, parameter, variable, predicted)
 
 #Visualize forecast.  Is it reasonable?
 #forecast %>% 
