@@ -3,8 +3,8 @@ library(neon4cast)
 library(lubridate)
 library(rMR)
 
-forecast_date <- Sys.Date()
-noaa_date <- Sys.Date() - days(1)  #Need to use yesterday's NOAA forecast because today's is not available yet
+forecast_date <- as.character(Sys.Date())
+noaa_date <- as.character(Sys.Date() - days(1))  #Need to use yesterday's NOAA forecast because today's is not available yet
 
 #Step 0: Define team name and team members 
 
@@ -38,17 +38,18 @@ sites <- sites[1]
   # Get site information for elevation
   site_info <- site_data %>% dplyr::filter(field_site_id == sites[i])
 
-  #noaa_past <- df_past |>
-  #  dplyr::filter(site_id == sites[i],
-  #                variable == "air_temperature") |>
-  #  dplyr::select(time, predicted, ensemble) |>
-  #  dplyr::collect()
+  noaa_past <- df_past |>
+    dplyr::filter(site_id == sites[i],
+                  variable == "air_temperature") |>
+    dplyr::select(time, predicted, ensemble) |>
+    dplyr::collect()
+  
 
   noaa_future <- df_future |>
     dplyr::filter(cycle == 0,
                   site_id == sites[i],
-                  start_date == as.character(noaa_date),
-                  time >= lubridate::as_datetime(forecast_date),
+                  start_date == noaa_date,
+                  time >= forecast_date,
                   variable == "air_temperature") |>
     dplyr::select(time, predicted, ensemble) |>
     dplyr::collect()
