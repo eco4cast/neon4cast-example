@@ -38,11 +38,11 @@ sites <- sites[1]
   # Get site information for elevation
   site_info <- site_data %>% dplyr::filter(field_site_id == sites[i])
 
-  noaa_past <- df_past |>
-    dplyr::filter(site_id == sites[i],
-                  variable == "air_temperature") |>
-    dplyr::select(time, predicted, ensemble) |>
-    dplyr::collect()
+  #noaa_past <- df_past |>
+  #  dplyr::filter(site_id == sites[i],
+  #                variable == "air_temperature") |>
+  #  dplyr::select(time, predicted, ensemble) |>
+  #  dplyr::collect()
 
   noaa_future <- df_future |>
     dplyr::filter(cycle == 0,
