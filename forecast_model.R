@@ -1,7 +1,7 @@
 library(tidyverse)
 library(neon4cast)
 library(lubridate)
-install.packages("rMR")
+remotes::install_cran("rMR", quiet = TRUE)
 library(rMR)
 
 dir.create("drivers", showWarnings = FALSE)
