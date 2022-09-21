@@ -13,7 +13,8 @@ jobs:
         uses: actions/checkout@v2
         with:
           fetch-depth: 0
-          
+      - name: install R packages
+        run: R -e 'source("install.R")' 
 # Point to the right path, run the right Rscript command
       - name: Run automatic prediction file
         run: /usr/local/bin/r forecast_model.R
