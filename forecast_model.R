@@ -11,7 +11,7 @@ noaa_date <- Sys.Date() - days(1)  #Need to use yesterday's NOAA forecast becaus
 
 #Step 0: Define team name and team members 
 
-model_id <- "air2waterSat"
+model_id <- "neon4cast_example"
 
 team_list <- list(list(individualName = list(givenName = "Quinn", 
                                              surName = "Thomas"),
