@@ -13,11 +13,6 @@ noaa_date <- Sys.Date() - days(1)  #Need to use yesterday's NOAA forecast becaus
 
 model_id <- "neon4cast_example"
 
-team_list <- list(list(individualName = list(givenName = "Quinn", 
-                                             surName = "Thomas"),
-                       organizationName = "Virginia Tech",
-                       electronicMailAddress = "rqthomas@vt.edu"))
-
 #Step 1: Download latest target data and site description data
 
 target <- readr::read_csv("https://data.ecoforecast.org/neon4cast-targets/aquatics/aquatics-targets.csv.gz", guess_max = 1e6)
