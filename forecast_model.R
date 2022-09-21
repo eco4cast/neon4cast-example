@@ -3,8 +3,6 @@ library(neon4cast)
 library(lubridate)
 library(rMR)
 
-dir.create("drivers", showWarnings = FALSE)
-
 forecast_date <- Sys.Date()
 noaa_date <- Sys.Date() - days(1)  #Need to use yesterday's NOAA forecast because today's is not available yet
 
