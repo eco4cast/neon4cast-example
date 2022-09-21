@@ -1,7 +1,6 @@
 library(tidyverse)
 library(neon4cast)
 library(lubridate)
-install.packages("rMR")
 library(rMR)
 
 dir.create("drivers", showWarnings = FALSE)
