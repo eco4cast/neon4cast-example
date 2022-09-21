@@ -115,9 +115,10 @@ for(i in 1:length(sites)){
 
 forecast <- forecast |> 
   mutate(reference_datetime = forecast_date,
-         family = "ensemble") |> 
+         family = "ensemble",
+         model_id = model_id) |> 
   rename(parameter = ensemble) |> 
-  select(datetime, reference_datetime, site_id, family, parameter, variable, predicted)
+  select(model_id, datetime, reference_datetime, site_id, family, parameter, variable, predicted)
 
 #Visualize forecast.  Is it reasonable?
 #forecast %>% 
