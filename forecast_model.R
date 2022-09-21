@@ -23,115 +23,115 @@ df_past <- neon4cast::noaa_stage3()
 
 df_future <- neon4cast::noaa_stage2()
 
-sites <- unique(target$site_id)
-
-#Step 3.0: Generate forecasts for each site
-
-forecast <- NULL
-
-for(i in 1:length(sites)){
-  
-  message(paste0("Running site: ", sites[i]))
-  
-  # Get site information for elevation
-  site_info <- site_data %>% dplyr::filter(field_site_id == sites[i]) 
-  
-  noaa_past <- df_past |> 
-    dplyr::filter(site_id == sites[i],
-                  variable == "air_temperature") |> 
-    dplyr::select(time, predicted, ensemble) |>
-    dplyr::collect()
-  
-  noaa_future <- df_future |> 
-    dplyr::filter(cycle == 0,
-                  site_id == sites[i],
-                  start_date == as.character(noaa_date),
-                  time >= lubridate::as_datetime(forecast_date), 
-                  variable == "air_temperature") |> 
-    dplyr::select(time, predicted, ensemble) |>
-    dplyr::collect()
-  
-  # Aggregate (to day) and convert units of drivers
-  
-  noaa_past_mean <- noaa_past %>% 
-    mutate(date = as_date(time)) %>% 
-    group_by(date) %>% 
-    summarize(air_temperature = mean(predicted, na.rm = TRUE), .groups = "drop") %>% 
-    rename(datetime = date) %>% 
-    mutate(air_temperature = air_temperature - 273.15)
-  
-  noaa_future_site <- noaa_future %>% 
-    mutate(datetime = as_date(time)) %>% 
-    group_by(datetime, ensemble) |> 
-    summarize(air_temperature = mean(predicted), .groups = "drop") |> 
-    mutate(air_temperature = air_temperature - 273.15) |> 
-    select(datetime, air_temperature, ensemble)
-  
-  #Merge in past NOAA data into the targets file, matching by date.
-  site_target <- target |> 
-    select(datetime, site_id, variable, observed) |> 
-    dplyr::filter(variable %in% c("temperature", "oxygen"),
-           site_id == sites[i]) |> 
-    pivot_wider(names_from = "variable", values_from = "observed") |>
-    left_join(noaa_past_mean, by = c("datetime"))
-  
-  #Check that temperature and oxygen are avialable at site
-  if("temperature" %in% names(site_target) & "oxygen" %in% names(site_target)){
-    
-    if(length(which(!is.na(site_target$air_temperature) & !is.na(site_target$temperature))) > 0){
-      
-      #Fit linear model based on past data: water temperature = m * air temperature + b
-      fit <- lm(site_target$temperature~site_target$air_temperature)
-      
-      #use linear regression to forecast water temperature for each ensemble member
-      forecasted_temperature <- fit$coefficients[1] + fit$coefficients[2] * noaa_future_site$air_temperature
-      
-      #use forecasted temperature to predict oyxgen by assuming that oxygen is saturated.  
-      forecasted_oxygen <- rMR::Eq.Ox.conc(forecasted_temperature, elevation.m = ,site_info$field_mean_elevation_m, 
-                                           bar.press = NULL, 
-                                           bar.units = NULL,
-                                           out.DO.meas = "mg/L",
-                                           salinity = 0, 
-                                           salinity.units = "pp.thou")
-      
-      temperature <- tibble(datetime = noaa_future_site$datetime,
-                            site_id = sites[i],
-                            ensemble = noaa_future_site$ensemble,
-                            predicted = forecasted_temperature,
-                            variable = "temperature")
-      
-      oxygen <- tibble(datetime = noaa_future_site$datetime,
-                       site_id = sites[i],
-                       ensemble = noaa_future_site$ensemble,
-                       predicted = forecasted_oxygen,
-                       variable = "oxygen")
-      
-      
-      #Build site level dataframe.  Note we are not forecasting chla
-      forecast <- dplyr::bind_rows(forecast, temperature, oxygen)
-    }
-  }
-}
-
-forecast <- forecast |> 
-  mutate(reference_datetime = forecast_date,
-         family = "ensemble",
-         model_id = model_id) |> 
-  rename(parameter = ensemble) |> 
-  select(model_id, datetime, reference_datetime, site_id, family, parameter, variable, predicted)
-
-#Visualize forecast.  Is it reasonable?
-#forecast %>% 
-#  ggplot(aes(x = time, y = predicted, group = ensemble)) +
-#  geom_line() +
-#  facet_grid(variable~site_id, scale ="free")
-
-#Forecast output file name in standards requires for Challenge.  
-# csv.gz means that it will be compressed
-forecast_file <- paste0("aquatics","-",min(forecast$datetime),"-",model_id,".csv.gz")
-
-#Write csv to disk
-write_csv(forecast, forecast_file)
+# sites <- unique(target$site_id)
+# 
+# #Step 3.0: Generate forecasts for each site
+# 
+# forecast <- NULL
+# 
+# for(i in 1:length(sites)){
+#   
+#   message(paste0("Running site: ", sites[i]))
+#   
+#   # Get site information for elevation
+#   site_info <- site_data %>% dplyr::filter(field_site_id == sites[i]) 
+#   
+#   noaa_past <- df_past |> 
+#     dplyr::filter(site_id == sites[i],
+#                   variable == "air_temperature") |> 
+#     dplyr::select(time, predicted, ensemble) |>
+#     dplyr::collect()
+#   
+#   noaa_future <- df_future |> 
+#     dplyr::filter(cycle == 0,
+#                   site_id == sites[i],
+#                   start_date == as.character(noaa_date),
+#                   time >= lubridate::as_datetime(forecast_date), 
+#                   variable == "air_temperature") |> 
+#     dplyr::select(time, predicted, ensemble) |>
+#     dplyr::collect()
+#   
+#   # Aggregate (to day) and convert units of drivers
+#   
+#   noaa_past_mean <- noaa_past %>% 
+#     mutate(date = as_date(time)) %>% 
+#     group_by(date) %>% 
+#     summarize(air_temperature = mean(predicted, na.rm = TRUE), .groups = "drop") %>% 
+#     rename(datetime = date) %>% 
+#     mutate(air_temperature = air_temperature - 273.15)
+#   
+#   noaa_future_site <- noaa_future %>% 
+#     mutate(datetime = as_date(time)) %>% 
+#     group_by(datetime, ensemble) |> 
+#     summarize(air_temperature = mean(predicted), .groups = "drop") |> 
+#     mutate(air_temperature = air_temperature - 273.15) |> 
+#     select(datetime, air_temperature, ensemble)
+#   
+#   #Merge in past NOAA data into the targets file, matching by date.
+#   site_target <- target |> 
+#     select(datetime, site_id, variable, observed) |> 
+#     dplyr::filter(variable %in% c("temperature", "oxygen"),
+#            site_id == sites[i]) |> 
+#     pivot_wider(names_from = "variable", values_from = "observed") |>
+#     left_join(noaa_past_mean, by = c("datetime"))
+#   
+#   #Check that temperature and oxygen are avialable at site
+#   if("temperature" %in% names(site_target) & "oxygen" %in% names(site_target)){
+#     
+#     if(length(which(!is.na(site_target$air_temperature) & !is.na(site_target$temperature))) > 0){
+#       
+#       #Fit linear model based on past data: water temperature = m * air temperature + b
+#       fit <- lm(site_target$temperature~site_target$air_temperature)
+#       
+#       #use linear regression to forecast water temperature for each ensemble member
+#       forecasted_temperature <- fit$coefficients[1] + fit$coefficients[2] * noaa_future_site$air_temperature
+#       
+#       #use forecasted temperature to predict oyxgen by assuming that oxygen is saturated.  
+#       forecasted_oxygen <- rMR::Eq.Ox.conc(forecasted_temperature, elevation.m = ,site_info$field_mean_elevation_m, 
+#                                            bar.press = NULL, 
+#                                            bar.units = NULL,
+#                                            out.DO.meas = "mg/L",
+#                                            salinity = 0, 
+#                                            salinity.units = "pp.thou")
+#       
+#       temperature <- tibble(datetime = noaa_future_site$datetime,
+#                             site_id = sites[i],
+#                             ensemble = noaa_future_site$ensemble,
+#                             predicted = forecasted_temperature,
+#                             variable = "temperature")
+#       
+#       oxygen <- tibble(datetime = noaa_future_site$datetime,
+#                        site_id = sites[i],
+#                        ensemble = noaa_future_site$ensemble,
+#                        predicted = forecasted_oxygen,
+#                        variable = "oxygen")
+#       
+#       
+#       #Build site level dataframe.  Note we are not forecasting chla
+#       forecast <- dplyr::bind_rows(forecast, temperature, oxygen)
+#     }
+#   }
+# }
+# 
+# forecast <- forecast |> 
+#   mutate(reference_datetime = forecast_date,
+#          family = "ensemble",
+#          model_id = model_id) |> 
+#   rename(parameter = ensemble) |> 
+#   select(model_id, datetime, reference_datetime, site_id, family, parameter, variable, predicted)
+# 
+# #Visualize forecast.  Is it reasonable?
+# #forecast %>% 
+# #  ggplot(aes(x = time, y = predicted, group = ensemble)) +
+# #  geom_line() +
+# #  facet_grid(variable~site_id, scale ="free")
+# 
+# #Forecast output file name in standards requires for Challenge.  
+# # csv.gz means that it will be compressed
+# forecast_file <- paste0("aquatics","-",min(forecast$datetime),"-",model_id,".csv.gz")
+# 
+# #Write csv to disk
+# write_csv(forecast, forecast_file)
 
 # Step 4: Submit forecast!
 
