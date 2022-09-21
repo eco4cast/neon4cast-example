@@ -23,33 +23,33 @@ df_past <- neon4cast::noaa_stage3()
 
 df_future <- neon4cast::noaa_stage2()
 
-# sites <- unique(target$site_id)
-# 
-# #Step 3.0: Generate forecasts for each site
-# 
-# forecast <- NULL
-# 
-# for(i in 1:length(sites)){
-#   
-#   message(paste0("Running site: ", sites[i]))
-#   
-#   # Get site information for elevation
-#   site_info <- site_data %>% dplyr::filter(field_site_id == sites[i]) 
-#   
-#   noaa_past <- df_past |> 
-#     dplyr::filter(site_id == sites[i],
-#                   variable == "air_temperature") |> 
-#     dplyr::select(time, predicted, ensemble) |>
-#     dplyr::collect()
-#   
-#   noaa_future <- df_future |> 
-#     dplyr::filter(cycle == 0,
-#                   site_id == sites[i],
-#                   start_date == as.character(noaa_date),
-#                   time >= lubridate::as_datetime(forecast_date), 
-#                   variable == "air_temperature") |> 
-#     dplyr::select(time, predicted, ensemble) |>
-#     dplyr::collect()
+sites <- unique(target$site_id)
+
+#Step 3.0: Generate forecasts for each site
+
+forecast <- NULL
+
+ for(i in 1:length(sites)){
+
+  message(paste0("Running site: ", sites[i]))
+
+  # Get site information for elevation
+  site_info <- site_data %>% dplyr::filter(field_site_id == sites[i])
+
+  noaa_past <- df_past |>
+    dplyr::filter(site_id == sites[i],
+                  variable == "air_temperature") |>
+    dplyr::select(time, predicted, ensemble) |>
+    dplyr::collect()
+
+  noaa_future <- df_future |>
+    dplyr::filter(cycle == 0,
+                  site_id == sites[i],
+                  start_date == as.character(noaa_date),
+                  time >= lubridate::as_datetime(forecast_date),
+                  variable == "air_temperature") |>
+    dplyr::select(time, predicted, ensemble) |>
+    dplyr::collect()
 #   
 #   # Aggregate (to day) and convert units of drivers
 #   
@@ -111,7 +111,7 @@ df_future <- neon4cast::noaa_stage2()
 #       forecast <- dplyr::bind_rows(forecast, temperature, oxygen)
 #     }
 #   }
-# }
+ }
 # 
 # forecast <- forecast |> 
 #   mutate(reference_datetime = forecast_date,
