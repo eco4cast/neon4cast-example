@@ -31,6 +31,8 @@ forecast <- NULL
 
 for(i in 1:length(sites)){
   
+  message(paste0("Running site: ", sites[i]))
+  
   # Get site information for elevation
   site_info <- site_data %>% dplyr::filter(field_site_id == sites[i]) 
   
