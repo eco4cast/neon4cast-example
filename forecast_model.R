@@ -44,14 +44,14 @@ sites <- sites[1]
     dplyr::select(time, predicted, ensemble) |>
     dplyr::collect()
 
-  #noaa_future <- df_future |>
-  #  dplyr::filter(cycle == 0,
-  #                site_id == sites[i],
-  #                start_date == as.character(noaa_date),
-  #                time >= lubridate::as_datetime(forecast_date),
-  #                variable == "air_temperature") |>
-  #  dplyr::select(time, predicted, ensemble) |>
-  #  dplyr::collect()
+  noaa_future <- df_future |>
+    dplyr::filter(cycle == 0,
+                  site_id == sites[i],
+                  start_date == as.character(noaa_date),
+                  time >= lubridate::as_datetime(forecast_date),
+                  variable == "air_temperature") |>
+    dplyr::select(time, predicted, ensemble) |>
+    dplyr::collect()
 #   
 #   # Aggregate (to day) and convert units of drivers
 #   
