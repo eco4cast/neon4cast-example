@@ -99,13 +99,13 @@ forecast <- NULL
       temperature <- tibble(datetime = noaa_future_site$datetime,
                             site_id = sites[i],
                             ensemble = noaa_future_site$ensemble,
-                            predicted = forecasted_temperature,
+                            prediction = forecasted_temperature,
                             variable = "temperature")
 
       oxygen <- tibble(datetime = noaa_future_site$datetime,
                        site_id = sites[i],
                        ensemble = noaa_future_site$ensemble,
-                       predicted = forecasted_oxygen,
+                       prediction = forecasted_oxygen,
                        variable = "oxygen")
 
 
@@ -120,16 +120,17 @@ forecast <- forecast |>
          family = "ensemble",
          model_id = model_id) |>
   rename(parameter = ensemble) |>
-  select(model_id, datetime, reference_datetime, site_id, family, parameter, variable, predicted)
+  select(model_id, datetime, reference_datetime, site_id, family, parameter, variable, prediction)
 
 #Visualize forecast.  Is it reasonable?
 #forecast %>%
-#  ggplot(aes(x = time, y = predicted, group = ensemble)) +
+#  ggplot(aes(x = time, y = prediction, group = ensemble)) +
 #  geom_line() +
 #  facet_grid(variable~site_id, scale ="free")
 
 #Forecast output file name in standards requires for Challenge.
 # csv.gz means that it will be compressed
+file_date <- forecast$reference_datetime[1]
 forecast_file <- paste0("aquatics","-",min(forecast$datetime),"-",model_id,".csv.gz")
 
 #Write csv to disk
