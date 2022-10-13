@@ -133,7 +133,7 @@ forecast <- forecast |>
 #Forecast output file name in standards requires for Challenge.
 # csv.gz means that it will be compressed
 file_date <- forecast$reference_datetime[1]
-forecast_file <- paste0("aquatics","-",min(forecast$datetime),"-",model_id,".csv.gz")
+forecast_file <- paste0("aquatics","-",file_date,"-",model_id,".csv.gz")
 
 #Write csv to disk
 write_csv(forecast, forecast_file)
