@@ -41,40 +41,42 @@ forecast <- NULL
   noaa_past <- df_past |>
     dplyr::filter(site_id == sites[i],
                   variable == "air_temperature") |>
-    dplyr::select(time, predicted, ensemble) |>
+    dplyr::rename(ensemble = parameter) %>%
+    dplyr::select(time, prediction, ensemble) |>
     dplyr::collect()
 
   noaa_future <- df_future |>
     dplyr::filter(cycle == 0,
                   site_id == sites[i],
-                  start_date == as.character(noaa_date),
-                  time >= lubridate::as_datetime(forecast_date),
+                  reference_dateteime == as.character(noaa_date),
+                  datetime >= lubridate::as_datetime(forecast_date),
                   variable == "air_temperature") |>
-    dplyr::select(time, predicted, ensemble) |>
+    dplyr::rename(ensemble = parameter) %>%
+    dplyr::select(time, prediction, ensemble) |>
     dplyr::collect()
 
   # Aggregate (to day) and convert units of drivers
 
   noaa_past_mean <- noaa_past %>%
-    mutate(date = as_date(time)) %>%
+    mutate(date = as_date(datetime)) %>%
     group_by(date) %>%
-    summarize(air_temperature = mean(predicted, na.rm = TRUE), .groups = "drop") %>%
+    summarize(air_temperature = mean(prediction, na.rm = TRUE), .groups = "drop") %>%
     rename(datetime = date) %>%
     mutate(air_temperature = air_temperature - 273.15)
 
   noaa_future_site <- noaa_future %>%
-    mutate(datetime = as_date(time)) %>%
-    group_by(datetime, ensemble) |>
-    summarize(air_temperature = mean(predicted), .groups = "drop") |>
+    mutate(datetime = as_date(datetime)) %>%
+    group_by(datetime, ensemble) %>%
+    summarize(air_temperature = mean(prediction), .groups = "drop") |>
     mutate(air_temperature = air_temperature - 273.15) |>
     select(datetime, air_temperature, ensemble)
 
   #Merge in past NOAA data into the targets file, matching by date.
   site_target <- target |>
-    select(datetime, site_id, variable, observed) |>
+    select(datetime, site_id, variable, observation) |>
     dplyr::filter(variable %in% c("temperature", "oxygen"),
            site_id == sites[i]) |>
-    pivot_wider(names_from = "variable", values_from = "observed") |>
+    pivot_wider(names_from = "variable", values_from = "observation") |>
     left_join(noaa_past_mean, by = c("datetime"))
 
   #Check that temperature and oxygen are avialable at site
