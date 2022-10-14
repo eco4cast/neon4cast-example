@@ -42,7 +42,7 @@ forecast <- NULL
     dplyr::filter(site_id == sites[i],
                   variable == "air_temperature") |>
     dplyr::rename(ensemble = parameter) %>%
-    dplyr::select(time, prediction, ensemble) |>
+    dplyr::select(datetime, prediction, ensemble) |>
     dplyr::collect()
 
   noaa_future <- df_future |>
@@ -51,7 +51,7 @@ forecast <- NULL
                   datetime >= lubridate::as_datetime(forecast_date),
                   variable == "air_temperature") |>
     dplyr::rename(ensemble = parameter) %>%
-    dplyr::select(time, prediction, ensemble) |>
+    dplyr::select(datetime, prediction, ensemble) |>
     dplyr::collect()
 
   # Aggregate (to day) and convert units of drivers
