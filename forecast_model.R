@@ -21,7 +21,7 @@ site_data <- readr::read_csv("https://raw.githubusercontent.com/eco4cast/neon4ca
 
 df_past <- neon4cast::noaa_stage3()
 
-df_future <- neon4cast::noaa_stage2()
+df_future <- neon4cast::noaa_stage2(cycle = 0)
 
 sites <- unique(target$site_id)
 
@@ -46,8 +46,7 @@ forecast <- NULL
     dplyr::collect()
 
   noaa_future <- df_future |>
-    dplyr::filter(cycle == 0,
-                  site_id == sites[i],
+    dplyr::filter(site_id == sites[i],
                   reference_dateteime == as.character(noaa_date),
                   datetime >= lubridate::as_datetime(forecast_date),
                   variable == "air_temperature") |>
