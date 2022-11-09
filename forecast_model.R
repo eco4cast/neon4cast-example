@@ -47,7 +47,7 @@ forecast <- NULL
 
   noaa_future <- df_future |>
     dplyr::filter(site_id == sites[i],
-                  reference_dateteime == as.character(noaa_date),
+                  reference_datetime == noaa_date,
                   datetime >= lubridate::as_datetime(forecast_date),
                   variable == "air_temperature") |>
     dplyr::rename(ensemble = parameter) %>%
@@ -139,4 +139,4 @@ write_csv(forecast, forecast_file)
 
 # Step 4: Submit forecast!
 
-neon4cast::submit(forecast_file = forecast_file, metadata = NULL, ask = FALSE)
+# neon4cast::submit(forecast_file = forecast_file, metadata = NULL, ask = FALSE)
