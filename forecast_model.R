@@ -25,7 +25,7 @@ sites <- unique(target$site_id)
 
 #Step 3.0: Generate forecasts for each site
 
-forecast <- "NULL"
+forecast <- NULL
 
 #sites <- sites[1:5]
 
