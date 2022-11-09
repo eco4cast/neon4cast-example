@@ -8,7 +8,7 @@ noaa_date <- Sys.Date() - days(1)  #Need to use yesterday's NOAA forecast becaus
 
 #Step 0: Define team name and team members 
 
-model_id <- "neon4cast_example"
+model_id <- "neon4cast_example_CB"
 
 #Step 1: Download latest target data and site description data
 
@@ -20,14 +20,12 @@ site_data <- readr::read_csv("https://raw.githubusercontent.com/eco4cast/neon4ca
 #Step 2: Get drivers
 
 df_past <- neon4cast::noaa_stage3()
-
 df_future <- neon4cast::noaa_stage2(cycle = 0)
-
 sites <- unique(target$site_id)
 
 #Step 3.0: Generate forecasts for each site
 
-forecast <- NULL
+forecast <- "NULL"
 
 #sites <- sites[1:5]
 
@@ -131,7 +129,7 @@ forecast <- forecast |>
 
 #Forecast output file name in standards requires for Challenge.
 # csv.gz means that it will be compressed
-file_date <- forecast$reference_datetime[1]
+file_date <- Sys.Date() #forecast$reference_datetime[1]
 forecast_file <- paste0("aquatics","-",file_date,"-",model_id,".csv.gz")
 
 #Write csv to disk
