@@ -18,112 +18,120 @@ target <- readr::read_csv("https://data.ecoforecast.org/neon4cast-targets/aquati
 site_data <- readr::read_csv("https://raw.githubusercontent.com/eco4cast/neon4cast-targets/main/NEON_Field_Site_Metadata_20220412.csv") |> 
   dplyr::filter(aquatics == 1)
 
+
 #Step 2: Get drivers
 
 df_past <- neon4cast::noaa_stage3()
-df_future <- neon4cast::noaa_stage2(cycle = 0)
-sites <- unique(target$site_id)
+
+# Step 2.5: We'll skip any site that doesn't have both temperature and oxygen
+sites <- target |> na.omit() |> distinct(site_id, variable) |> 
+  filter(variable %in% c("oxygen", "temperature")) |>
+  count(site_id) |> filter(n==2) |> pull(site_id)
+
+
 
 #Step 3.0: Generate forecasts for each site
 
 forecast <- NULL
 
-#sites <- sites[1:5]
 
- for(i in 1:length(sites)){
-
-  message(paste0("Running site: ", sites[i]))
-
-  # Get site information for elevation
-  site_info <- site_data |> dplyr::filter(field_site_id == sites[i])
-
-  noaa_past <- df_past |>
-    dplyr::filter(site_id == sites[i],
-                  variable == "air_temperature") |>
+noaa_mean_historical <- function(df_past, site, var) {
+  df_past |>
+    dplyr::filter(site_id == site,
+                  variable == var) |>
     dplyr::rename(ensemble = parameter) |>
     dplyr::select(datetime, prediction, ensemble) |>
-    dplyr::collect()
-
-  noaa_future <- df_future |>
-    dplyr::filter(site_id == sites[i],
-                  reference_datetime == noaa_date,
-                  datetime >= lubridate::as_datetime(forecast_date),
-                  variable == "air_temperature") |>
-    dplyr::rename(ensemble = parameter) |>
-    dplyr::select(datetime, prediction, ensemble) |>
-    dplyr::collect()
-
-  # Aggregate (to day) and convert units of drivers
-
-  noaa_past_mean <- noaa_past |>
     dplyr::mutate(date = as_date(datetime)) |>
     dplyr::group_by(date) |>
     dplyr::summarize(air_temperature = mean(prediction, na.rm = TRUE),
                      .groups = "drop") |>
     dplyr::rename(datetime = date) |>
-    dplyr::mutate(air_temperature = air_temperature - 273.15)
-
-  noaa_future_site <- noaa_future |>
-    dplyr::mutate(datetime = as_date(datetime)) |>
-    dplyr::group_by(datetime, ensemble) |>
-    dplyr::summarize(air_temperature = mean(prediction), .groups = "drop") |>
     dplyr::mutate(air_temperature = air_temperature - 273.15) |>
-    dplyr::select(datetime, air_temperature, ensemble)
+    dplyr::collect()
+}
+
+noaa_mean_forecast <- function(df_future, site, var) {
+  ## Use way less RAM
+  endpoint = "data.ecoforecast.org"
+  bucket <- glue::glue("neon4cast-drivers/noaa/gefs-v12/stage2/parquet/0/{noaa_date}")
+  s3 <- arrow::s3_bucket(bucket, endpoint_override = endpoint, anonymous = TRUE)
+  arrow::open_dataset(s3) |>
+  dplyr::filter(site_id == site,
+                datetime >= lubridate::as_datetime(forecast_date),
+                variable == var) |>
+  dplyr::select(datetime, prediction, parameter) |>
+  dplyr::mutate(datetime = as_date(datetime)) |>
+  dplyr::group_by(datetime, parameter) |>
+  dplyr::summarize(air_temperature = mean(prediction), .groups = "drop") |>
+  dplyr::mutate(air_temperature = air_temperature - 273.15) |>
+  dplyr::select(datetime, air_temperature, parameter) |>
+  dplyr::rename(ensemble = parameter) |>
+  dplyr::collect()
+}
+
+
+#sites <- sites[1:5]
+
+forecast_site <- function(site) {
+  message(paste0("Running site: ", site))
+
+  # Get site information for elevation
+  site_info <- site_data |> dplyr::filter(field_site_id == site)
+  
+  noaa_past_mean <- noaa_mean_historical(df_past, site, "air_temperature")
+  noaa_future <- noaa_mean_forecast(df_future, site, "air_temperature")
 
   #Merge in past NOAA data into the targets file, matching by date.
   site_target <- target |>
     dplyr::select(datetime, site_id, variable, observation) |>
-    dplyr::filter(variable %in% c("temperature", "oxygen"),
-           site_id == sites[i]) |>
+    dplyr::filter(variable %in% c("temperature", "oxygen"), 
+                  site_id == site) |>
     tidyr::pivot_wider(names_from = "variable", values_from = "observation") |>
     dplyr::left_join(noaa_past_mean, by = c("datetime"))
 
-  #Check that temperature and oxygen are avialable at site
-  if("temperature" %in% names(site_target) & "oxygen" %in% names(site_target)){
+  # Fit linear model based on past data: water temperature = m * air temperature + b
+  fit <- lm(temperature ~ air_temperature, data = site_target)
 
-    if(length(which(!is.na(site_target$air_temperature) & !is.na(site_target$temperature))) > 0){
+  # use linear regression to forecast water temperature for each ensemble member
+  forecasted_temperature <- fit$coefficients[1] + 
+    fit$coefficients[2] * noaa_future$air_temperature
 
-      #Fit linear model based on past data: water temperature = m * air temperature + b
-      fit <- lm(site_target$temperature~site_target$air_temperature)
+  temperature <- tibble(datetime = noaa_future$datetime,
+                        site_id = site,
+                        ensemble = noaa_future$ensemble,
+                        prediction = forecasted_temperature,
+                        variable = "temperature")
+  
+  # use forecasted temperature to predict oyxgen by assuming that oxygen is saturated.
+  forecasted_oxygen <- rMR::Eq.Ox.conc(forecasted_temperature, 
+                                       elevation.m = site_info$field_mean_elevation_m,
+                                       bar.press = NULL,
+                                       bar.units = NULL,
+                                       out.DO.meas = "mg/L",
+                                       salinity = 0,
+                                       salinity.units = "pp.thou")
 
-      #use linear regression to forecast water temperature for each ensemble member
-      forecasted_temperature <- fit$coefficients[1] + 
-        fit$coefficients[2] * noaa_future_site$air_temperature
+  oxygen <- tibble(datetime = noaa_future$datetime,
+                   site_id = site,
+                   ensemble = noaa_future$ensemble,
+                   prediction = forecasted_oxygen,
+                   variable = "oxygen")
 
-      #use forecasted temperature to predict oyxgen by assuming that oxygen is saturated.
-      forecasted_oxygen <- rMR::Eq.Ox.conc(forecasted_temperature, 
-                                           elevation.m = site_info$field_mean_elevation_m,
-                                           bar.press = NULL,
-                                           bar.units = NULL,
-                                           out.DO.meas = "mg/L",
-                                           salinity = 0,
-                                           salinity.units = "pp.thou")
+    #Build site level dataframe.  Note we are not forecasting chla
+    dplyr::bind_rows(temperature, oxygen)
 
-      temperature <- tibble(datetime = noaa_future_site$datetime,
-                            site_id = sites[i],
-                            ensemble = noaa_future_site$ensemble,
-                            prediction = forecasted_temperature,
-                            variable = "temperature")
-
-      oxygen <- tibble(datetime = noaa_future_site$datetime,
-                       site_id = sites[i],
-                       ensemble = noaa_future_site$ensemble,
-                       prediction = forecasted_oxygen,
-                       variable = "oxygen")
-
-
-      #Build site level dataframe.  Note we are not forecasting chla
-      forecast <- dplyr::bind_rows(forecast, temperature, oxygen)
-    }
-  }
 }
+
+forecast <- map_dfr(sites, forecast_site)
+
 
 forecast <- forecast |>
   mutate(reference_datetime = forecast_date,
          family = "ensemble",
          model_id = model_id) |>
   rename(parameter = ensemble) |>
-  select(model_id, datetime, reference_datetime, site_id, family, parameter, variable, prediction)
+  select(model_id, datetime, reference_datetime,
+         site_id, family, parameter, variable, prediction)
 
 #Visualize forecast.  Is it reasonable?
 #forecast |>
@@ -141,4 +149,4 @@ write_csv(forecast, forecast_file)
 
 # Step 4: Submit forecast!
 
-neon4cast::submit(forecast_file = forecast_file, metadata = NULL, ask = FALSE)
+# neon4cast::submit(forecast_file = forecast_file, metadata = NULL, ask = FALSE)
