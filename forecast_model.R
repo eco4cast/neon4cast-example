@@ -91,7 +91,8 @@ forecast <- NULL
         fit$coefficients[2] * noaa_future_site$air_temperature
 
       #use forecasted temperature to predict oyxgen by assuming that oxygen is saturated.
-      forecasted_oxygen <- rMR::Eq.Ox.conc(forecasted_temperature, elevation.m = site_info$field_mean_elevation_m,
+      forecasted_oxygen <- rMR::Eq.Ox.conc(forecasted_temperature, 
+                                           elevation.m = site_info$field_mean_elevation_m,
                                            bar.press = NULL,
                                            bar.units = NULL,
                                            out.DO.meas = "mg/L",
