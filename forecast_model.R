@@ -20,20 +20,7 @@ site_data <- readr::read_csv("https://raw.githubusercontent.com/eco4cast/neon4ca
 
 
 #Step 2: Get drivers
-
 df_past <- neon4cast::noaa_stage3()
-
-# Step 2.5: We'll skip any site that doesn't have both temperature and oxygen
-sites <- target |> na.omit() |> distinct(site_id, variable) |> 
-  filter(variable %in% c("oxygen", "temperature")) |>
-  count(site_id) |> filter(n==2) |> pull(site_id)
-
-
-
-#Step 3.0: Generate forecasts for each site
-
-forecast <- NULL
-
 
 noaa_mean_historical <- function(df_past, site, var) {
   df_past |>
@@ -69,8 +56,14 @@ noaa_mean_forecast <- function(df_future, site, var) {
   dplyr::collect()
 }
 
+# Step 2.5: We'll skip any site that doesn't have both temperature and oxygen
+sites <- target |> na.omit() |> distinct(site_id, variable) |> 
+  filter(variable %in% c("oxygen", "temperature")) |>
+  count(site_id) |> filter(n==2) |> pull(site_id)
 
-#sites <- sites[1:5]
+site <- sites[[1]]
+
+#Step 3.0: Generate forecasts for each site
 
 forecast_site <- function(site) {
   message(paste0("Running site: ", site))
@@ -89,6 +82,7 @@ forecast_site <- function(site) {
     tidyr::pivot_wider(names_from = "variable", values_from = "observation") |>
     dplyr::left_join(noaa_past_mean, by = c("datetime"))
 
+  rm(noaa_past_mean)
   # Fit linear model based on past data: water temperature = m * air temperature + b
   fit <- lm(temperature ~ air_temperature, data = site_target)
 
@@ -145,7 +139,8 @@ forecast_file <- paste0("aquatics","-",file_date,"-",model_id,".csv.gz")
 
 #Write csv to disk
 write_csv(forecast, forecast_file)
-
+q
 # Step 4: Submit forecast!
 
 neon4cast::submit(forecast_file = forecast_file, metadata = NULL, ask = FALSE)
+

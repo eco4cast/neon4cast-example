@@ -1,0 +1,4 @@
+Package: package
+Version: 0.1.0
+Depends: neon4cast, rME
+Remotes: github::eco4cast/neon4cast
