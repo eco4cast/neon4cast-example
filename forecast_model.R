@@ -124,7 +124,6 @@ forecast_site <- function(site) {
 
 forecast <- map_dfr(sites, forecast_site)
 
-
 forecast <- forecast |>
   mutate(reference_datetime = forecast_date,
          family = "ensemble",
@@ -134,10 +133,10 @@ forecast <- forecast |>
          site_id, family, parameter, variable, prediction)
 
 #Visualize forecast.  Is it reasonable?
-#forecast |>
-#  ggplot(aes(x = time, y = prediction, group = ensemble)) +
-#  geom_line() +
-#  facet_grid(variable~site_id, scale ="free")
+forecast |> filter(site_id %in% sites[1:6]) |> # not too many sites
+  ggplot(aes(x = datetime, y = prediction, group = parameter)) +
+  geom_line(alpha=0.3) +
+  facet_grid(variable~site_id, scale ="free")
 
 #Forecast output file name in standards requires for Challenge.
 # csv.gz means that it will be compressed
