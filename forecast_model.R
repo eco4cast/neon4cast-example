@@ -1,6 +1,5 @@
 
 library(tidyverse)
-library(conflicted)
 library(neon4cast)
 library(lubridate)
 library(rMR)
@@ -10,7 +9,7 @@ noaa_date <- Sys.Date() - days(1)  #Need to use yesterday's NOAA forecast becaus
 
 #Step 0: Define team name and team members 
 
-model_id <- "neon4cast_example_CB"
+model_id <- "neon4cast_example"
 
 #Step 1: Download latest target data and site description data
 
@@ -141,4 +140,4 @@ write_csv(forecast, forecast_file)
 
 # Step 4: Submit forecast!
 
-# neon4cast::submit(forecast_file = forecast_file, metadata = NULL, ask = FALSE)
+neon4cast::submit(forecast_file = forecast_file, metadata = NULL, ask = FALSE)
