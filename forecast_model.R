@@ -72,7 +72,6 @@ forecast_site <- function(site) {
   site_info <- site_data |> dplyr::filter(field_site_id == site)
   
   noaa_past_mean <- noaa_mean_historical(df_past, site, "air_temperature")
-  noaa_future <- noaa_mean_forecast(df_future, site, "air_temperature")
 
   #Merge in past NOAA data into the targets file, matching by date.
   site_target <- target |>
@@ -82,9 +81,15 @@ forecast_site <- function(site) {
     tidyr::pivot_wider(names_from = "variable", values_from = "observation") |>
     dplyr::left_join(noaa_past_mean, by = c("datetime"))
 
-  rm(noaa_past_mean)
-  # Fit linear model based on past data: water temperature = m * air temperature + b
+  rm(noaa_past_mean) # save RAM 
+  
+  # Fit linear model based o # n past data: water temperature = m * air temperature + b
   fit <- lm(temperature ~ air_temperature, data = site_target)
+  
+  rm(site_target) # save RAM
+
+  noaa_future <- noaa_mean_forecast(df_future, site, "air_temperature")
+
 
   # use linear regression to forecast water temperature for each ensemble member
   forecasted_temperature <- fit$coefficients[1] + 
