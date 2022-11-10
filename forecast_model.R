@@ -148,4 +148,4 @@ write_csv(forecast, forecast_file)
 
 # Step 4: Submit forecast!
 
-# neon4cast::submit(forecast_file = forecast_file, metadata = NULL, ask = FALSE)
+neon4cast::submit(forecast_file = forecast_file, metadata = NULL, ask = FALSE)
