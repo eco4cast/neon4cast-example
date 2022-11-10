@@ -1,17 +1,14 @@
 # neon4cast-example
 
+[![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://github.com/codespaces/new?hide_repo_select=true&ref=main&repo=563603613)
+
 This repository is a template example for generating a forecast that is automated through GitHub actions.
 
 ## Applying this repository to a new forecast
 
 1) Click "Use This Template" to copy this example to your Github account.
-1) Modify `forecast_model.R` to make your forecast model .  Many of the components you need to generate the forecast, including downloading NOAA weather forecasts, downloading target data, generating forecast files, generating metadata, validating files, and submitting forecasts. Avoid running the `neon4cast::submit()` function at the end of `forecast_model.R` until you are ready to submit a forecast to the Challenge.  It is important that you do NOT change the name of the file.  GitHub Actions (below) is looking for this file name. Be sure to change your `team_name` and `team_list`
+1) Modify `forecast_model.R` to make your forecast model .  Many of the components you need to generate the forecast, including downloading NOAA weather forecasts, downloading target data, generating forecast files, generating metadata, validating files, and submitting forecasts. Avoid running the `neon4cast::submit()` function at the end of `forecast_model.R` until you are ready to submit a forecast to the Challenge.  It is important that you do NOT change the name of the file.  GitHub Actions (below) is looking for this file name. Be sure to change your `model_id`
 2) Commit and push the changes to `forecast_model.R` to Github. 
-
-Ready to submit a forecast?
-
-3) Uncomment the line with the function `neon4cast::submit(forecast_file = forecast_file,metadata = metadata_file, ask = FALSE)`
-4) Commit and push the changes to `forecast_model.R` to Github. 
 
 ## Manually running forecast in GitHub actions
 
