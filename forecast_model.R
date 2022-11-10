@@ -37,12 +37,13 @@ noaa_mean_historical <- function(df_past, site, var) {
     dplyr::collect()
 }
 
-noaa_mean_forecast <- function(df_future, site, var) {
+noaa_mean_forecast <- function(site, var) {
   ## Use way less RAM
   endpoint = "data.ecoforecast.org"
   bucket <- glue::glue("neon4cast-drivers/noaa/gefs-v12/stage2/parquet/0/{noaa_date}")
   s3 <- arrow::s3_bucket(bucket, endpoint_override = endpoint, anonymous = TRUE)
-  arrow::open_dataset(s3) |>
+  
+  lazy <- arrow::open_dataset(s3) |>
   dplyr::filter(site_id == site,
                 datetime >= lubridate::as_datetime(forecast_date),
                 variable == var) |>
@@ -53,7 +54,9 @@ noaa_mean_forecast <- function(df_future, site, var) {
   dplyr::mutate(air_temperature = air_temperature - 273.15) |>
   dplyr::select(datetime, air_temperature, parameter) |>
   dplyr::rename(ensemble = parameter) |>
-  dplyr::collect()
+  dplyr::compute()
+  gc()
+  lazy |> dplyr::collect()
 }
 
 # Step 2.5: We'll skip any site that doesn't have both temperature and oxygen
@@ -88,36 +91,35 @@ forecast_site <- function(site) {
   
   rm(site_target) # save RAM
 
-  noaa_future <- noaa_mean_forecast(df_future, site, "air_temperature")
-
+  noaa_future <- noaa_mean_forecast(site, "air_temperature")
 
   # use linear regression to forecast water temperature for each ensemble member
-  forecasted_temperature <- fit$coefficients[1] + 
-    fit$coefficients[2] * noaa_future$air_temperature
+  #forecasted_temperature <- fit$coefficients[1] + fit$coefficients[2] * noaa_future$air_temperature
 
-  temperature <- tibble(datetime = noaa_future$datetime,
-                        site_id = site,
-                        ensemble = noaa_future$ensemble,
-                        prediction = forecasted_temperature,
-                        variable = "temperature")
-  
+  temperature <- 
+    noaa_future |> 
+    mutate(site_id = site,
+           prediction = predict(fit, tibble(air_temperature)),
+           variable = "temperature")
+
   # use forecasted temperature to predict oyxgen by assuming that oxygen is saturated.
-  forecasted_oxygen <- rMR::Eq.Ox.conc(forecasted_temperature, 
-                                       elevation.m = site_info$field_mean_elevation_m,
-                                       bar.press = NULL,
-                                       bar.units = NULL,
-                                       out.DO.meas = "mg/L",
-                                       salinity = 0,
-                                       salinity.units = "pp.thou")
+  forecasted_oxygen <- 
+    rMR::Eq.Ox.conc(temperature$air_temperature, 
+                    elevation.m = site_info$field_mean_elevation_m,
+                    bar.press = NULL,
+                    bar.units = NULL,
+                    out.DO.meas = "mg/L",
+                    salinity = 0,
+                    salinity.units = "pp.thou")
 
-  oxygen <- tibble(datetime = noaa_future$datetime,
-                   site_id = site,
-                   ensemble = noaa_future$ensemble,
-                   prediction = forecasted_oxygen,
-                   variable = "oxygen")
+  oxygen <- 
+    noaa_future |> 
+    mutate(site_id = site,
+           prediction = forecasted_oxygen,
+           variable = "oxygen")
 
-    #Build site level dataframe.  Note we are not forecasting chla
-    dplyr::bind_rows(temperature, oxygen)
+  # Build site level dataframe.  Note we are not forecasting chla
+  dplyr::bind_rows(temperature, oxygen)
 
 }
 
