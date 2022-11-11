@@ -28,6 +28,7 @@
   },
 	  
   // Use 'postCreateCommand' to run commands after the container is created.
-  // "postCreateCommand": "sudo rstudio-server start",
+  "postCreateCommand": "sudo rstudio-server start",
+  "postAttachCommand": "sudo rstudio-server start",
   "remoteUser": "rstudio"
 }
