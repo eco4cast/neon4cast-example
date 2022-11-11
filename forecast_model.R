@@ -45,6 +45,7 @@ noaa_mean_forecast <- function(site, var, reference_date) {
   bucket <- glue::glue("neon4cast-drivers/noaa/gefs-v12/stage1/0/{reference_date}")
   s3 <- arrow::s3_bucket(bucket, endpoint_override = endpoint, anonymous = TRUE)
   
+  # stage1 air temp is Celsius
   arrow::open_dataset(s3) |>
     dplyr::filter(site_id == site,
                   datetime >= lubridate::as_datetime(forecast_date),
@@ -53,7 +54,6 @@ noaa_mean_forecast <- function(site, var, reference_date) {
     dplyr::mutate(datetime = as_date(datetime)) |>
     dplyr::group_by(datetime, parameter) |>
     dplyr::summarize(air_temperature = mean(prediction), .groups = "drop") |>
-    dplyr::mutate(air_temperature = air_temperature - 273.15) |>
     dplyr::select(datetime, air_temperature, parameter) |>
     dplyr::rename(ensemble = parameter) |>
     dplyr::collect()
@@ -129,14 +129,14 @@ forecast_site <- function(site) {
 
 ### AND HERE WE GO! We're ready to start forecasting ### 
 
-## Test with the first few sites
-forecast <- map_dfr(sites[1:6], forecast_site)
+## Test with a single site first!
+forecast <- forecast_site( sites[1] )
 
 #Visualize the ensemble predictions -- what do you think?
 forecast |> 
   ggplot(aes(x = datetime, y = prediction, group = parameter)) +
   geom_line(alpha=0.3) +
-  facet_grid(variable~site_id, scale ="free")
+  facet_wrap(~variable, scales = "free")
 
 
 # Run all sites -- may be slow!
