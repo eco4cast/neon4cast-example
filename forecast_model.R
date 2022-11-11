@@ -114,34 +114,33 @@ forecast_site <- function(site) {
            prediction = forecasted_oxygen,
            variable = "oxygen")
   
-  out <- dplyr::bind_rows(temperature, oxygen)
+  forecast <- dplyr::bind_rows(temperature, oxygen)
   
-  out
+  # Format results to EFI standard
+  forecast <- forecast |>
+    mutate(reference_datetime = forecast_date,
+           family = "ensemble",
+           model_id = model_id) |>
+    rename(parameter = ensemble) |>
+    select(model_id, datetime, reference_datetime,
+           site_id, family, parameter, variable, prediction)
 }
 
+### AND HERE WE GO! We're ready to start forecasting ### 
 
-### HERE WE GO! ### 
-# Actually compute the forecast at each site. 
-forecast <- map_dfr(sites, forecast_site)
+## Test with the first few sites
+forecast <- map_dfr(sites[1:6], forecast_site)
 
-
-
-
-
-# Format results to EFI standard
-forecast <- forecast |>
-  mutate(reference_datetime = forecast_date,
-         family = "ensemble",
-         model_id = model_id) |>
-  rename(parameter = ensemble) |>
-  select(model_id, datetime, reference_datetime,
-         site_id, family, parameter, variable, prediction)
-
-#Visualize some forecasts.  Are they reasonable?
-forecast |> filter(site_id %in% sites[1:6]) |> # not too many sites
+#Visualize the ensemble predictions -- what do you think?
+forecast |> 
   ggplot(aes(x = datetime, y = prediction, group = parameter)) +
   geom_line(alpha=0.3) +
   facet_grid(variable~site_id, scale ="free")
+
+
+# Run all sites -- may be slow!
+forecast <- map_dfr(sites, forecast_site)
+
 
 #Forecast output file name in standards requires for Challenge.
 # csv.gz means that it will be compressed
