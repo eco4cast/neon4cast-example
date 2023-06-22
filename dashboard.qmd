@@ -1,0 +1,43 @@
+---
+title: "dashboard"
+format: html
+---
+
+```{r include=FALSE,message=FALSE,warning=FALSE}
+knitr::opts_chunk$set(echo=FALSE)
+library(neon4cast)
+library(tidyverse)
+```
+
+<!-- -->
+
+```{r}
+my_model = "neon4cast_example"
+baseline = "climatology"
+theme = "aquatics"
+```
+
+```{r}
+scores <- 
+  combined_scores(theme, collect = FALSE) |>
+  filter(model_id %in% c(my_model, baseline))
+```
+
+## Most recent forecast
+
+```{r}
+scores |> filter(model_id == my_model, 
+                 reference_datetime == max(reference_datetime))
+
+```
+
+## Most recent fully-scored forecast
+
+
+```{r}
+scores |> filter(model_id == my_model, 
+                 reference_datetime == max(reference_datetime))
+
+```
+
+
