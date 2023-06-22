@@ -1,43 +1,108 @@
----
-title: "dashboard"
-format: html
----
-
-```{r include=FALSE,message=FALSE,warning=FALSE}
-knitr::opts_chunk$set(echo=FALSE)
-library(neon4cast)
-library(tidyverse)
+```{r, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, message=FALSE, warning=FALSE)
 ```
 
-<!-- -->
+```{r setup}
+library(ggiraph)
+library(dplyr)
+library(ggplot2)
+library(glue)
+source("R/plot-utils.R")
+source("../R/ignore_sigpipes.R")
+ignore_sigpipe()
+
+
+```
+
+# Most recent forecasts
 
 ```{r}
-my_model = "neon4cast_example"
-baseline = "climatology"
-theme = "aquatics"
+theme <- "terrestrial_daily"
+cutoff <- as.character(Sys.Date() - 30)
+combined <- arrow::open_dataset("../cache/parquet/terrestrial_daily") |> 
+  filter(date >= cutoff,
+         site_id %in% c("ABOY", "ACPR")) |> collect()
+
+
+config <- yaml::read_yaml("../challenge_configuration.yaml")
+sites <- readr::read_csv(paste0("../", config$site_table), show_col_types = FALSE) |> 
+  filter(!is.na(data_url))
 ```
 
 ```{r}
-scores <- 
-  combined_scores(theme, collect = FALSE) |>
-  filter(model_id %in% c(my_model, baseline))
+df <- combined |> 
+  left_join(sites, by = "site_id") |> 
+  filter(site_id %in% sites$site_id) |> 
+  mutate(reference_datetime = lubridate::as_datetime(reference_datetime)) |>
+  mutate(variable = ifelse(variable == "nee", "Net Ecosystem Exchange\n(gC/m2/day)", variable),
+         variable = ifelse(variable == "le", "Evapotranspiration\n(W/m2)", variable))
+       
+df |> 
+  filter(lubridate::as_date(reference_datetime) == max(lubridate::as_date(combined$reference_datetime))) |> 
+  ggplot(aes(x = datetime)) +
+  geom_ribbon(aes(ymin = quantile10, ymax = quantile90, fill = model_id), alpha = 0.5) + 
+  geom_line(aes(y = median, color = model_id)) +
+  facet_grid(variable~site, scales = "free_y") +
+  labs(y = "forecast") +
+  theme_bw()
 ```
-
-## Most recent forecast
 
 ```{r}
-scores |> filter(model_id == my_model, 
-                 reference_datetime == max(reference_datetime))
+sites <- combined |> distinct(site_id) |> collect() |> slice_head(n= 6) |> pull(site_id)
+## with at least n observations to compare!
+
+ref <- Sys.Date() - lubridate::days(30)
+ref <- max(c(ref, min(lubridate::as_date(combined$reference_datetime))))
+
+#n_data <- 10
+#who <- combined |> filter(!is.na(observation)) |> summarise(has_data = max(reference_datetime)) |> collect()
+#ref <- as.character ( as.Date(who$has_data[[1]]) - n_data )
+ex <- combined |> filter(reference_datetime == ref, site_id %in% sites) 
 
 ```
 
-## Most recent fully-scored forecast
+# Forecast analysis
 
+Below are forecasts submitted 30 days ago and include the observations used to evaluate them. Mouse over to see the team id, scroll to zoom.
+
+::: panel-tabset
+
+## CO2 Flux
+
+Net ecosystem exchange of CO2 (NEE)
 
 ```{r}
-scores |> filter(model_id == my_model, 
-                 reference_datetime == max(reference_datetime))
-
+ex |> filter(reference_datetime == ref, variable == "nee") |> forecast_plots()
 ```
+
+## Latent evaporation
+
+```{r}
+ex |> filter(reference_datetime == ref, variable == "le") |> forecast_plots()
+```
+:::
+
+## Leaderboard
+
+Average skill scores of each model across all sites.\
+
+Scores are shown by reference date and forecast horizon (in days).\
+
+Scores are averaged across all submissions of the model with a given horizon or a given `reference_datetime` using submissions made since `r cutoff`.\
+
+::: panel-tabset
+## CO2 flux
+
+```{r}
+leaderboard_plots(combined, "nee")
+```
+
+## Latent evaporation
+
+```{r}
+leaderboard_plots(combined, "le")
+```
+
+:::
 
 
